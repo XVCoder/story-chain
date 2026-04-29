@@ -3,13 +3,13 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testMatch: ['**/*.test.ts'],
-  moduleFileExtensions: ['ts', 'js'],
-  transform: {
-    '^.+\\.ts$': 'ts-jest',
+  moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  globals: {
-    'ts-jest': {
-      tsconfig: './tsconfig.node.json',
-    },
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: './tsconfig.test.json',
+    }],
   },
 };

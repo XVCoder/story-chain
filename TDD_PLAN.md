@@ -5,7 +5,7 @@
 | 阶段 | 状态 | 提交信息 |
 |------|------|----------|
 | Phase 1: 安全修复与基础架构 | ✅ 已完成 | `Phase 1: Security fixes, Vue Router integration, and architecture improvements` |
-| Phase 2: 测试先行 - 后端测试补充 | ⏳ 进行中 | - |
+| Phase 2: 测试先行 - 后端测试补充 | ✅ 已完成 | `Phase 2: Complete backend API test coverage with 45 passing tests` |
 | Phase 3: 游戏模式差异化逻辑 | 📅 待开始 | - |
 | Phase 4: 前端功能完善 | 📅 待开始 | - |
 | Phase 5: 积分与体验优化 | 📅 待开始 | - |
@@ -31,13 +31,14 @@
 - [x] 1.7 添加环境变量配置(.env)
 - [x] **阶段完成：git commit**
 
-### Phase 2: 测试先行 - 后端测试补充 ⏳ 进行中
+### Phase 2: 测试先行 - 后端测试补充 ✅ 已完成
 
-- [ ] 2.1 编写投币API测试
-- [ ] 2.2 编写节点选择API测试
-- [ ] 2.3 编写积分兑换/道具使用测试
-- [ ] 2.4 编写团队/竞赛API测试
-- [ ] **阶段完成：git commit**
+- [x] 2.1 编写投币API测试（投币成功/无认证/积分不足/累计投币）
+- [x] 2.2 编写节点选择API测试（作者选择/非作者禁止/最大节点状态变化）
+- [x] 2.3 编写积分兑换/道具使用测试（无效道具/积分不足/空背包/无道具时使用）
+- [x] 2.4 编写团队/竞赛API测试（创建/加入/查询/竞赛创建/加入/权限）
+- [x] **测试结果：45 tests passed, 6 test suites**
+- [x] **阶段完成：git commit**
 
 ### Phase 3: 游戏模式差异化逻辑
 

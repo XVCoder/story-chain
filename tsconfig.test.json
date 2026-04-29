@@ -1,0 +1,12 @@
+{
+  "extends": "./server/tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": false,
+    "outDir": "./dist-test",
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["tests/**/*.ts", "server/**/*.ts"]
+}

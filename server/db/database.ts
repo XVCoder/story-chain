@@ -1,11 +1,21 @@
 import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(__dirname, '../../../');
-const dbPath = path.join(__dirname, '../story_chain.db');
+let _require: ReturnType<typeof createRequire>;
+let currentDir: string;
+try {
+  currentDir = path.dirname(__filename);
+  _require = createRequire(__filename);
+} catch {
+  currentDir = process.cwd();
+  _require = createRequire(currentDir + '/');
+}
+const sqlJsMainPath = _require.resolve('sql.js');
+const sqlJsPackagePath = path.resolve(sqlJsMainPath, '../..');
+const wasmDir = path.join(sqlJsPackagePath, 'dist');
+const dbPath = path.join(currentDir, 'story_chain.db');
 
 export let db: any = null;
 
@@ -36,7 +46,7 @@ export function execute(sql: string, params: any[] = []): void {
 
 export const initDatabase = async (): Promise<void> => {
   const SQL = await initSqlJs({
-    locateFile: file => path.join(projectRoot, 'node_modules/.pnpm/sql.js@1.14.1/node_modules/sql.js/dist', file)
+    locateFile: file => path.join(wasmDir, file)
   });
 
   let data: Uint8Array | undefined;

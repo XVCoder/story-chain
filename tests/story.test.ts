@@ -40,7 +40,7 @@ describe('Story API', () => {
       });
     
     expect(response.status).toBe(201);
-    storyId = response.body.story_id;
+    storyId = response.body.id;
   });
 
   it('should get all stories', async () => {
@@ -62,7 +62,7 @@ describe('Story API', () => {
     await request(app)
       .put(`/api/stories/${storyId}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ status: 'ongoing' });
+      .send({ title: 'Test Story', summary: 'A test story summary', status: 'ongoing' });
     
     const response = await request(app)
       .post('/api/nodes')
