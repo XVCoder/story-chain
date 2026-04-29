@@ -1,0 +1,48 @@
+{
+  "name": "story-chain",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "jest",
+    "server": "node --experimental-specifier-resolution=node --experimental-vm-modules server/index.ts"
+  },
+  "dependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.6.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "axios": "^1.15.2",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.9.0",
+    "cors": "^2.8.6",
+    "element-plus": "^2.13.7",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "sql.js": "^1.14.1",
+    "sqlite3": "^6.0.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/sql.js": "^1.4.11",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vue/tsconfig": "^0.7.0",
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.9",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vue-tsc": "^2.2.8"
+  }
+}
