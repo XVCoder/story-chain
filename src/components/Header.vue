@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElButton, ElDropdown, ElDropdownItem, ElBadge } from 'element-plus';
+import { ElButton, ElDropdown, ElDropdownItem, ElBadge, ElMessage } from 'element-plus';
 import { store, setUser } from '../store';
-import { inventoryAPI } from '../api';
+import { inventoryAPI, authAPI } from '../api';
 
 const router = useRouter();
 
@@ -34,11 +34,34 @@ const refreshInventory = async () => {
   }
 };
 
+const refreshUserPoints = async () => {
+  if (!store.user) return;
+  try {
+    const oldPoints = store.user.points;
+    const res = await authAPI.getProfile();
+    if (res.data && res.data.points !== undefined) {
+      store.user.points = res.data.points;
+      if (res.data.points > oldPoints) {
+        ElMessage.success(`积分 +${res.data.points - oldPoints}`);
+      } else if (res.data.points < oldPoints) {
+        ElMessage.info(`积分 ${res.data.points - oldPoints}`);
+      }
+    }
+  } catch {
+    console.error('Failed to refresh points');
+  }
+};
+
 const goHome = () => {
   router.push('/');
 };
 
-defineExpose({ refreshInventory });
+const itemName = (type: string) => {
+  const map: Record<string, string> = { ai_polish: 'AI润色', hint: '提示', skip: '跳过' };
+  return map[type] || type;
+};
+
+defineExpose({ refreshInventory, refreshUserPoints });
 </script>
 
 <template>
@@ -80,17 +103,17 @@ defineExpose({ refreshInventory });
     </div>
 
     <div v-if="showInventory" class="inventory-panel">
-      <h3>背包</h3>
-      <div class="inventory-items">
-        <div v-for="item in store.inventory" :key="item.item_type" class="inventory-item">
-          <span class="item-icon">✨</span>
-          <span class="item-name">{{ item.item_type === 'ai_polish' ? 'AI润色' : item.item_type }}</span>
-          <span class="item-count">x{{ item.quantity }}</span>
+        <h3>背包</h3>
+        <div class="inventory-items">
+          <div v-for="item in store.inventory" :key="item.item_type" class="inventory-item">
+            <span class="item-icon">✨</span>
+            <span class="item-name">{{ itemName(item.item_type) }}</span>
+            <span class="item-count">x{{ item.quantity }}</span>
+          </div>
+          <p v-if="store.inventory.length === 0" class="empty">背包空空如也</p>
         </div>
-        <p v-if="store.inventory.length === 0" class="empty">背包空空如也</p>
+        <ElButton type="primary" size="small" @click="router.push('/profile')">兑换道具</ElButton>
       </div>
-      <ElButton type="primary" size="small">兑换道具</ElButton>
-    </div>
   </header>
 </template>
 

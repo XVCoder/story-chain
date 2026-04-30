@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router';
 import { ElButton, ElTag, ElCard, ElInput, ElMessage } from 'element-plus';
 import { ElDialog } from 'element-plus';
 import type { Story } from '../types';
-import { storyAPI, nodeAPI, interactionAPI, inventoryAPI } from '../api';
+import { storyAPI, nodeAPI, interactionAPI, inventoryAPI, authAPI } from '../api';
 import { store } from '../store';
 const props = defineProps<{
   id: string;
@@ -14,6 +14,9 @@ const loading = ref(true);
 const showAddNode = ref(false);
 const nodeContent = ref('');
 const showAIPolish = ref(false);
+const showHint = ref(false);
+const showSkip = ref(false);
+const hintContent = ref('');
 const modeText = computed(() => {
  const modes: Record<string, string> = {
  free: '自由',
@@ -136,8 +139,10 @@ const handleCoin = async (nodeId: number) => {
  ElMessage.warning('积分不足');
  return;
  }
+ const oldPoints = store.user.points;
  try {
  await interactionAPI.coin(nodeId, 1);
+ store.user.points = oldPoints - 1;
  ElMessage.success('投币成功');
  await fetchStory();
  }
@@ -165,6 +170,37 @@ const handleAIPolish = async () => {
  await inventoryAPI.use({ item_type: 'ai_polish', story_id: Number(props.id) });
  ElMessage.success('AI润色已应用');
  showAIPolish.value = false;
+ await fetchStory();
+ }
+ catch (error) {
+ ElMessage.error('操作失败');
+ }
+};
+const handleUseHint = async () => {
+ const hintItem = store.inventory.find(item => item.item_type === 'hint');
+ if (!hintItem || hintItem.quantity <= 0) {
+ ElMessage.warning('提示道具不足');
+ return;
+ }
+ try {
+ await inventoryAPI.use({ item_type: 'hint' });
+ ElMessage.success('提示：尝试从角色对话或场景描写入手展开接龙！');
+ showHint.value = false;
+ }
+ catch (error) {
+ ElMessage.error('操作失败');
+ }
+};
+const handleUseSkip = async () => {
+ const skipItem = store.inventory.find(item => item.item_type === 'skip');
+ if (!skipItem || skipItem.quantity <= 0) {
+ ElMessage.warning('跳过道具不足');
+ return;
+ }
+ try {
+ await inventoryAPI.use({ item_type: 'skip', story_id: Number(props.id) });
+ ElMessage.success('已跳过当前节点');
+ showSkip.value = false;
  await fetchStory();
  }
  catch (error) {
@@ -211,6 +247,8 @@ onMounted(() => {
           <ElButton @click="showAIPolish = true" type="warning" v-if="isAuthor">
             AI润色
           </ElButton>
+          <ElButton @click="showHint = true" type="info" v-if="store.user">提示</ElButton>
+          <ElButton @click="showSkip = true" type="danger" plain v-if="store.user">跳过</ElButton>
         </div>
       </ElCard>
 
@@ -269,6 +307,22 @@ onMounted(() => {
         <template #footer>
           <ElButton @click="showAIPolish = false">取消</ElButton>
           <ElButton type="primary" @click="handleAIPolish">确认使用</ElButton>
+        </template>
+      </ElDialog>
+
+      <ElDialog v-model="showHint" title="使用提示道具" @close="showHint = false">
+        <p>使用提示道具获取接龙写作灵感？</p>
+        <template #footer>
+          <ElButton @click="showHint = false">取消</ElButton>
+          <ElButton type="primary" @click="handleUseHint">确认使用</ElButton>
+        </template>
+      </ElDialog>
+
+      <ElDialog v-model="showSkip" title="使用跳过道具" @close="showSkip = false">
+        <p>确定跳过当前节点？将自动完成此节点的接龙。</p>
+        <template #footer>
+          <ElButton @click="showSkip = false">取消</ElButton>
+          <ElButton type="primary" @click="handleUseSkip">确认使用</ElButton>
         </template>
       </ElDialog>
     </template>

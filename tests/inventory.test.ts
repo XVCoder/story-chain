@@ -16,12 +16,13 @@ describe('Inventory API', () => {
   beforeAll(async () => {
     await initDatabase();
 
+    const uniqueName = `invuser${Date.now()}`;
     await request(app)
       .post('/api/users/register')
-      .send({ username: 'inventoryuser', password: 'testpass' });
+      .send({ username: uniqueName, password: 'testpass' });
     const loginResponse = await request(app)
       .post('/api/users/login')
-      .send({ username: 'inventoryuser', password: 'testpass' });
+      .send({ username: uniqueName, password: 'testpass' });
     token = loginResponse.body.token;
 
     const storyResponse = await request(app)
@@ -46,7 +47,7 @@ describe('Inventory API', () => {
       const response = await request(app)
         .post('/api/inventory/exchange')
         .set('Authorization', `Bearer ${token}`)
-        .send({ item_type: 'ai_polish', quantity: 1 });
+        .send({ item_type: 'ai_polish', quantity: 2 });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe('Insufficient points');

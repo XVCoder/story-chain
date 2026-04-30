@@ -1,12 +1,13 @@
-<script setup lang="ts">import { ref, computed } from 'vue';
+<script setup lang="ts">import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElCard, ElButton, ElMessage, ElForm, ElFormItem, ElInput, ElSelect, ElOption } from 'element-plus';
 import { ElDialog } from 'element-plus';
 import { store } from '../store';
-import { inventoryAPI } from '../api';
+import { inventoryAPI, authAPI } from '../api';
 const router = useRouter();
 const goBack = () => router.push('/');
 const showExchange = ref(false);
+const loading = ref(true);
 const exchangeForm = ref({
  item_type: 'ai_polish',
  quantity: 1,
@@ -25,25 +26,48 @@ const totalCost = computed(() => {
 const canAfford = computed(() => {
  return (store.user?.points || 0) >= totalCost.value;
 });
+const refreshUserData = async () => {
+  if (!store.user) return;
+  try {
+    const [profileRes, invRes] = await Promise.all([
+      authAPI.getProfile(),
+      inventoryAPI.get(),
+    ]);
+    if (profileRes.data) {
+      store.user.points = profileRes.data.points;
+    }
+    store.inventory = invRes.data;
+  } catch {
+    console.error('Failed to refresh user data');
+  }
+};
 const handleExchange = async () => {
+ const oldPoints = store.user?.points || 0;
  try {
  await inventoryAPI.exchange(exchangeForm.value);
- ElMessage.success('兑换成功');
+ const cost = totalCost.value;
+ if (store.user) store.user.points = oldPoints - cost;
+ ElMessage.success(`兑换成功，消耗 ${cost} 积分`);
  showExchange.value = false;
- const response = await inventoryAPI.get();
- store.inventory = response.data;
+ await refreshUserData();
  }
- catch (error) {
- ElMessage.error('兑换失败');
+ catch (error: any) {
+ ElMessage.error(error?.response?.data?.message || '兑换失败');
  }
 };
+onMounted(async () => {
+  await refreshUserData();
+  loading.value = false;
+});
 </script>
 
 <template>
   <div class="profile-page">
-    <ElButton @click="goBack" class="back-btn">返回</ElButton>
-    
-    <ElCard class="profile-card">
+    <div v-if="loading" class="loading">加载中...</div>
+    <template v-else>
+      <ElButton @click="goBack" class="back-btn">返回</ElButton>
+      
+      <ElCard class="profile-card">
       <div class="profile-header">
         <div class="avatar">
           <span class="avatar-icon">👤</span>
@@ -91,6 +115,7 @@ const handleExchange = async () => {
         </div>
       </div>
     </ElCard>
+    </template>
   </div>
 
   <ElDialog v-model="showExchange" title="兑换道具" @close="showExchange = false">
@@ -120,6 +145,13 @@ const handleExchange = async () => {
 <style scoped>
 .back-btn {
   margin-bottom: 20px;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 0;
+  color: #909399;
+  font-size: 16px;
 }
 
 .profile-card {

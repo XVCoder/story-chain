@@ -8,7 +8,7 @@
 | Phase 2: 测试先行 - 后端测试补充 | ✅ 已完成 | `Phase 2: Complete backend API test coverage with 45 passing tests` |
 | Phase 3: 游戏模式差异化逻辑 | ✅ 已完成 | `Phase 3: Game mode differentiation logic with 57 passing tests` |
 | Phase 4: 前端功能完善 | ✅ 已完成 | `Phase 4: Frontend team/competition UI, search, node tree, my stories` |
-| Phase 5: 积分与体验优化 | 📅 待开始 | - |
+| Phase 5: 积分与体验优化 | ✅ 已完成 | `Phase 5: Points notification, initial rewards, item usage, loading states` |
 | Phase 6: 集成测试与验收 | 📅 待开始 | - |
 
 ---
@@ -65,14 +65,15 @@
 - [x] 导航栏更新：添加团队/竞赛/我的故事入口
 - [x] **阶段完成：git commit**
 
-### Phase 5: 积分与体验优化
+### Phase 5: 积分与体验优化 ✅ 已完成
 
-- [ ] 5.1 积分获取提示UI
-- [ ] 5.2 注册初始积分奖励
-- [ ] 5.3 Loading/空状态/错误状态统一处理
-- [ ] 5.4 积分实时刷新
-- [ ] 5.5 道具使用完整入口
-- [ ] **阶段完成：git commit**
+- [x] 5.1 注册初始积分奖励：新用户注册即得 100 积分
+- [x] 5.2 积分获取提示 UI：Header 中积分变化自动检测并弹出通知
+- [x] 5.3 积分实时刷新：投币扣减积分、兑换扣减积分、登录刷新积分
+- [x] 5.4 道具使用完整入口：详情页增加提示和跳过道具使用按钮+对话框
+- [x] 5.5 Loading/空状态/错误状态：ProfilePage 添加加载状态
+- [x] 修复测试使用唯一用户名避免数据库残留冲突
+- [x] **阶段完成：git commit**
 
 ### Phase 6: 集成测试与验收
 

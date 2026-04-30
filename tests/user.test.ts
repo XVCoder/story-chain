@@ -15,21 +15,22 @@ describe('User API', () => {
   });
 
   let token: string;
+  const uniqueName = `testuser${Date.now()}`;
 
   it('should register a new user', async () => {
     const response = await request(app)
       .post('/api/users/register')
-      .send({ username: 'testuser', password: 'testpass', email: 'test@test.com' });
+      .send({ username: uniqueName, password: 'testpass', email: 'test@test.com' });
     
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('id');
-    expect(response.body.username).toBe('testuser');
+    expect(response.body.username).toBe(uniqueName);
   });
 
   it('should not register duplicate username', async () => {
     const response = await request(app)
       .post('/api/users/register')
-      .send({ username: 'testuser', password: 'testpass' });
+      .send({ username: uniqueName, password: 'testpass' });
     
     expect(response.status).toBe(400);
   });
@@ -37,18 +38,18 @@ describe('User API', () => {
   it('should login with correct credentials', async () => {
     const response = await request(app)
       .post('/api/users/login')
-      .send({ username: 'testuser', password: 'testpass' });
+      .send({ username: uniqueName, password: 'testpass' });
     
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('token');
-    expect(response.body.user.username).toBe('testuser');
+    expect(response.body.user.username).toBe(uniqueName);
     token = response.body.token;
   });
 
   it('should not login with wrong password', async () => {
     const response = await request(app)
       .post('/api/users/login')
-      .send({ username: 'testuser', password: 'wrongpass' });
+      .send({ username: uniqueName, password: 'wrongpass' });
     
     expect(response.status).toBe(401);
   });
@@ -59,6 +60,6 @@ describe('User API', () => {
       .set('Authorization', `Bearer ${token}`);
     
     expect(response.status).toBe(200);
-    expect(response.body.username).toBe('testuser');
+    expect(response.body.username).toBe(uniqueName);
   });
 });

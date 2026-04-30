@@ -16,8 +16,9 @@ export const register = (req: Request, res: Response) => {
 
   try {
     const hash = bcrypt.hashSync(password, 10);
-    execute('INSERT INTO users (username, password, email) VALUES (?, ?, ?)', [username, hash, email || null]);
-    const user = queryOne('SELECT id, username, email FROM users WHERE username = ?', [username]);
+    const initialPoints = 100;
+    execute('INSERT INTO users (username, password, email, points) VALUES (?, ?, ?, ?)', [username, hash, email || null, initialPoints]);
+    const user = queryOne('SELECT id, username, email, points FROM users WHERE username = ?', [username]);
     res.status(201).json(user);
   } catch (error) {
     return res.status(400).json({ message: 'Username or email already exists' });
@@ -38,7 +39,7 @@ export const login = (req: Request, res: Response) => {
   }
 
   const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
-  res.json({ token, user: { id: user.id, username: user.username, points: user.points } });
+  res.json({ token, user: { id: user.id, username: user.username, points: user.points, email: user.email } });
 };
 
 export const getUserProfile = (req: AuthRequest, res: Response) => {
