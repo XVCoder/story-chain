@@ -54,11 +54,17 @@ const handleCreateStory = async () => {
   }
   creating.value = true;
   try {
-    await storyAPI.create(createForm.value);
+    const res = await storyAPI.create(createForm.value);
     ElMessage.success('故事创建成功');
     showCreateDialog.value = false;
     createForm.value = { title: '', summary: '', content: '', mode: 'free', max_nodes: 5 };
-    await fetchStories();
+    const storyId = res.data.id;
+    if (storyId) {
+      router.push({ name: 'story-detail', params: { id: storyId } });
+    } else {
+      activeTab.value = 'ongoing';
+      await fetchStories();
+    }
   } catch {
     ElMessage.error('创建失败');
   } finally {
