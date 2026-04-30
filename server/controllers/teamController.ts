@@ -84,6 +84,48 @@ export const joinCompetition = (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getTeamMembers = (req: Request, res: Response) => {
+  const { team_id } = req.params;
+
+  const team = queryOne('SELECT id FROM teams WHERE id = ?', [team_id]);
+  if (!team) {
+    return res.status(404).json({ message: 'Team not found' });
+  }
+
+  const members = queryAll(`
+    SELECT tm.user_id, tm.role, u.username
+    FROM team_members tm
+    JOIN users u ON u.id = tm.user_id
+    WHERE tm.team_id = ?
+    ORDER BY tm.role DESC, u.username ASC
+  `, [team_id]) as any[];
+
+  res.json(members);
+};
+
+export const leaveTeam = (req: AuthRequest, res: Response) => {
+  const { team_id } = req.params;
+  const user_id = req.user?.id;
+
+  const member = queryOne('SELECT id, role FROM team_members WHERE team_id = ? AND user_id = ?', [team_id, user_id]);
+  if (!member) {
+    return res.status(404).json({ message: 'Not a member of this team' });
+  }
+
+  if (member.role === 'leader') {
+    const otherMembers = queryOne('SELECT id FROM team_members WHERE team_id = ? AND role = ?', [team_id, 'member']);
+    if (!otherMembers) {
+      execute('DELETE FROM team_members WHERE team_id = ?', [team_id]);
+      execute('DELETE FROM teams WHERE id = ?', [team_id]);
+      return res.json({ message: 'Team disbanded' });
+    }
+    return res.status(400).json({ message: 'Transfer leadership before leaving' });
+  }
+
+  execute('DELETE FROM team_members WHERE team_id = ? AND user_id = ?', [team_id, user_id]);
+  res.json({ message: 'Left team successfully' });
+};
+
 export const getCompetitions = (req: Request, res: Response) => {
   const competitions = queryAll('SELECT * FROM competitions ORDER BY start_time DESC') as any[];
   res.json(competitions);

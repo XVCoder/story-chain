@@ -24,7 +24,7 @@ export const authAPI = {
 };
 
 export const storyAPI = {
-  create: (data: { title: string; summary: string; content: string; mode?: string; max_nodes?: number }) =>
+  create: (data: { title: string; summary: string; content: string; mode?: string; max_nodes?: number; team_id?: number; competition_id?: number }) =>
     api.post('/stories', data),
   getAll: (params: { status?: string; mode?: string; sort_by?: string; page?: number; limit?: number }) =>
     api.get('/stories', { params }),
@@ -32,6 +32,8 @@ export const storyAPI = {
   update: (id: number, data: { title?: string; summary?: string; status?: string }) =>
     api.put(`/stories/${id}`, data),
   delete: (id: number) => api.delete(`/stories/${id}`),
+  getMyStories: () => api.get('/stories/my'),
+  search: (q: string) => api.get('/stories/search', { params: { q } }),
 };
 
 export const nodeAPI = {
@@ -58,11 +60,14 @@ export const inventoryAPI = {
 export const teamAPI = {
   create: (data: { name: string }) => api.post('/teams', data),
   join: (team_id: number) => api.post(`/teams/${team_id}/join`),
+  leave: (team_id: number) => api.post(`/teams/${team_id}/leave`),
   getAll: () => api.get('/teams'),
   getUserTeams: () => api.get('/teams/user'),
+  getMembers: (team_id: number) => api.get(`/teams/${team_id}/members`),
   createCompetition: (data: { title: string; description?: string; end_time?: string }) =>
     api.post('/competitions', data),
   joinCompetition: (data: { competition_id: number; team_id: number }) =>
     api.post('/competitions/join', data),
   getCompetitions: () => api.get('/competitions'),
+  getLeaderboard: (competition_id: number) => api.get(`/competitions/${competition_id}/leaderboard`),
 };

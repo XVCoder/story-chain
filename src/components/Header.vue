@@ -50,9 +50,10 @@ defineExpose({ refreshInventory });
       </div>
       
       <nav class="nav">
-        <span class="nav-item active">首页</span>
-        <span class="nav-item">故事列表</span>
-        <span class="nav-item">接龙中</span>
+        <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/' }" @click="goHome">首页</span>
+        <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/teams' }" @click="router.push('/teams')">团队</span>
+        <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/competitions' }" @click="router.push('/competitions')">竞赛</span>
+        <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/my-stories' }" @click="router.push('/my-stories')" v-if="isLoggedIn">我的故事</span>
       </nav>
       
       <div class="header-right">

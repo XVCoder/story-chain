@@ -56,3 +56,15 @@ export interface Competition {
   end_time?: string;
   status: string;
 }
+
+export interface TeamMember {
+  user_id: number;
+  username: string;
+  role: string;
+}
+
+export interface LeaderboardEntry {
+  id: number;
+  name: string;
+  score: number;
+}

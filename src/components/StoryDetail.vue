@@ -33,12 +33,34 @@ const statusText = computed(() => {
  return story.value ? (statuses[story.value.status] || story.value.status) : '';
 });
 const canAddNode = computed(() => {
- return story.value?.status === 'ongoing' &&
- story.value.current_nodes < story.value.max_nodes &&
- store.user;
+  return story.value?.status === 'ongoing' &&
+    (story.value.max_nodes === 0 || story.value.current_nodes < story.value.max_nodes) &&
+    store.user;
 });
 const isAuthor = computed(() => {
- return store.user?.id === story.value?.author_id;
+  return store.user?.id === story.value?.author_id;
+});
+
+const nodeTree = computed(() => {
+  if (!story.value?.nodes) return [];
+  const nodes = story.value.nodes;
+  const map = new Map<number, any>();
+  const roots: any[] = [];
+
+  nodes.forEach(n => {
+    map.set(n.id, { ...n, children: [] });
+  });
+
+  nodes.forEach(n => {
+    const node = map.get(n.id)!;
+    if (n.parent_id && map.has(n.parent_id)) {
+      map.get(n.parent_id)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots;
 });
 const fetchStory = async () => {
  try {
@@ -194,29 +216,36 @@ onMounted(() => {
 
       <div class="nodes-section">
         <h2>故事节点 ({{ story.current_nodes }}/{{ story.max_nodes }})</h2>
-        <div class="nodes-list">
-          <div 
-            v-for="(node, index) in story.nodes" 
-            :key="node.id"
-            class="node-item"
-            :class="{ selected: node.is_selected }"
-          >
-            <div class="node-header">
-              <span class="node-number">第 {{ index + 1 }} 段</span>
-              <span class="node-coins">💰 {{ node.coins }}</span>
-              <ElTag v-if="node.is_selected" type="success">已选中</ElTag>
+        <div class="node-tree">
+          <div v-for="(node, index) in nodeTree" :key="node.id" class="tree-root">
+            <div class="node-item" :class="{ selected: node.is_selected }">
+              <div class="node-header">
+                <span class="node-number">第 {{ index + 1 }} 段</span>
+                <span class="node-coins">💰 {{ node.coins }}</span>
+                <ElTag v-if="node.is_selected" type="success" size="small">已选中</ElTag>
+              </div>
+              <p class="node-content">{{ node.content }}</p>
+              <div class="node-actions">
+                <ElButton size="small" @click="handleCoin(node.id)">投币</ElButton>
+                <ElButton size="small" type="primary" v-if="isAuthor && !node.is_selected" @click="handleSelectNode(node.id)">选为下一节点</ElButton>
+              </div>
             </div>
-            <p class="node-content">{{ node.content }}</p>
-            <div class="node-actions">
-              <ElButton size="small" @click="handleCoin(node.id)">投币</ElButton>
-              <ElButton 
-                size="small" 
-                type="primary" 
-                v-if="isAuthor && !node.is_selected"
-                @click="handleSelectNode(node.id)"
-              >
-                选为下一节点
-              </ElButton>
+            <div v-if="node.children.length > 0" class="tree-branches">
+              <div v-for="child in node.children" :key="child.id" class="tree-branch">
+                <div class="branch-connector"></div>
+                <div class="node-item branch-item" :class="{ selected: child.is_selected }">
+                  <div class="node-header">
+                    <span class="node-number">接龙</span>
+                    <span class="node-coins">💰 {{ child.coins }}</span>
+                    <ElTag v-if="child.is_selected" type="success" size="small">已选中</ElTag>
+                  </div>
+                  <p class="node-content">{{ child.content }}</p>
+                  <div class="node-actions">
+                    <ElButton size="small" @click="handleCoin(child.id)">投币</ElButton>
+                    <ElButton size="small" type="primary" v-if="isAuthor && !child.is_selected" @click="handleSelectNode(child.id)">选为下一节点</ElButton>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -294,21 +323,65 @@ onMounted(() => {
   margin-top: 20px;
 }
 
-.nodes-list {
+.node-tree {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.node-item {
+.tree-root {
   border: 1px solid #e4e7ed;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 16px;
+  background: #fff;
+}
+
+.tree-root.selected, .node-item.selected {
+  border-color: #409eff;
+  background-color: #ecf5ff;
+}
+
+.tree-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-left: 24px;
+  border-left: 2px solid #e4e7ed;
+}
+
+.tree-branch {
+  position: relative;
+}
+
+.branch-connector {
+  position: absolute;
+  left: -24px;
+  top: 50%;
+  width: 24px;
+  height: 2px;
+  background: #e4e7ed;
+}
+
+.node-item {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.node-item:hover {
+  border-color: #dcdfe6;
 }
 
 .node-item.selected {
   border-color: #409eff;
   background-color: #ecf5ff;
+}
+
+.branch-item {
+  border: 1px solid #f0f0f0;
+  background: #fafafa;
 }
 
 .node-header {

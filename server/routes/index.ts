@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { register, login, getUserProfile, updateUserProfile } from '../controllers/userController.js';
-import { createStory, getStories, getStoryById, updateStory, deleteStory } from '../controllers/storyController.js';
+import { createStory, getStories, getStoryById, updateStory, deleteStory, getMyStories, searchStories } from '../controllers/storyController.js';
 import { addNode, getNodesByStory, selectNode } from '../controllers/nodeController.js';
 import { likeStory, favoriteStory, coinNode, getUserFavorites } from '../controllers/interactionController.js';
 import { exchangePoints, getUserInventory, useItem } from '../controllers/inventoryController.js';
-import { createTeam, joinTeam, getTeams, getUserTeams, createCompetition, joinCompetition, getCompetitions, getCompetitionLeaderboard } from '../controllers/teamController.js';
+import { createTeam, joinTeam, getTeams, getUserTeams, getTeamMembers, leaveTeam, createCompetition, joinCompetition, getCompetitions, getCompetitionLeaderboard } from '../controllers/teamController.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
@@ -16,6 +16,8 @@ router.put('/users/profile', authenticate, updateUserProfile);
 
 router.post('/stories', authenticate, createStory);
 router.get('/stories', getStories);
+router.get('/stories/search', searchStories);
+router.get('/stories/my', authenticate, getMyStories);
 router.get('/stories/:id', getStoryById);
 router.put('/stories/:id', authenticate, updateStory);
 router.delete('/stories/:id', authenticate, deleteStory);
@@ -35,6 +37,8 @@ router.post('/inventory/use', authenticate, useItem);
 
 router.post('/teams', authenticate, createTeam);
 router.post('/teams/:team_id/join', authenticate, joinTeam);
+router.post('/teams/:team_id/leave', authenticate, leaveTeam);
+router.get('/teams/:team_id/members', getTeamMembers);
 router.get('/teams', getTeams);
 router.get('/teams/user', authenticate, getUserTeams);
 

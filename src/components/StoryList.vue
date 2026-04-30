@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElTabs, ElTabPane, ElSelect, ElOption, ElMessage } from 'element-plus';
+import { ElTabs, ElTabPane, ElSelect, ElOption, ElMessage, ElInput } from 'element-plus';
 import type { Story } from '../types';
 import StoryCard from './StoryCard.vue';
 import { interactionAPI } from '../api';
@@ -16,9 +16,15 @@ const props = defineProps<{
 
 const activeTab = ref('published');
 const sortBy = ref('time');
+const searchQuery = ref('');
 
 const filteredStories = computed(() => {
   let result = activeTab.value === 'published' ? props.stories : props.ongoingStories;
+  
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase();
+    result = result.filter(s => s.title.toLowerCase().includes(q) || s.summary.toLowerCase().includes(q));
+  }
   
   if (sortBy.value === 'hot') {
     result = [...result].sort((a, b) => (b.likes + b.favorites) - (a.likes + a.favorites));
@@ -70,9 +76,13 @@ const handleFavorite = async (storyId: number) => {
         <ElTabPane label="接龙中" name="ongoing" />
       </ElTabs>
       
+      <div class="search-control">
+        <ElInput v-model="searchQuery" placeholder="搜索故事..." size="small" clearable prefix-icon="Search" />
+      </div>
+      
       <div class="sort-control">
         <span>排序：</span>
-        <ElSelect v-model="sortBy">
+        <ElSelect v-model="sortBy" size="small">
           <ElOption label="最新发布" value="time" />
           <ElOption label="热度最高" value="hot" />
         </ElSelect>
@@ -113,6 +123,11 @@ const handleFavorite = async (storyId: number) => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.search-control {
+  margin: 0 16px;
+  min-width: 200px;
 }
 
 .stories-grid {

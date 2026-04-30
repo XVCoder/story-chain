@@ -20,6 +20,21 @@ const router = createRouter({
       name: 'profile',
       component: () => import('../components/ProfilePage.vue'),
     },
+    {
+      path: '/teams',
+      name: 'teams',
+      component: () => import('../components/TeamPage.vue'),
+    },
+    {
+      path: '/competitions',
+      name: 'competitions',
+      component: () => import('../components/CompetitionPage.vue'),
+    },
+    {
+      path: '/my-stories',
+      name: 'my-stories',
+      component: () => import('../components/MyStories.vue'),
+    },
   ],
 });
 

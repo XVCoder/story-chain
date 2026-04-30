@@ -130,3 +130,33 @@ export const deleteStory = (req: AuthRequest, res: Response) => {
 
   res.json({ message: 'Story deleted successfully' });
 };
+
+export const getMyStories = (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+
+  const stories = queryAll(`
+    SELECT * FROM stories WHERE author_id = ?
+    ORDER BY created_at DESC
+  `, [userId]) as any[];
+
+  res.json(stories);
+};
+
+export const searchStories = (req: Request, res: Response) => {
+  const { q } = req.query;
+
+  if (!q) {
+    const stories = queryAll('SELECT * FROM stories WHERE status = ? ORDER BY created_at DESC', ['published']) as any[];
+    return res.json(stories);
+  }
+
+  const searchTerm = `%${q}%`;
+  const stories = queryAll(`
+    SELECT * FROM stories
+    WHERE (title LIKE ? OR summary LIKE ?)
+    AND status = ?
+    ORDER BY created_at DESC
+  `, [searchTerm, searchTerm, 'published']) as any[];
+
+  res.json(stories);
+};

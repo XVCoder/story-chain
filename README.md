@@ -144,6 +144,8 @@ story-chain/
 | | GET `/api/users/profile` | 获取用户资料 |
 | | PUT `/api/users/profile` | 更新用户资料 |
 | **故事** | GET `/api/stories` | 获取故事列表（支持分页/筛选/排序） |
+| | GET `/api/stories/search` | 搜索故事（按标题/摘要） |
+| | GET `/api/stories/my` | 获取我的故事列表 |
 | | GET `/api/stories/:id` | 获取故事详情 |
 | | POST `/api/stories` | 创建故事 |
 | | PUT `/api/stories/:id` | 更新故事 |
@@ -161,6 +163,8 @@ story-chain/
 | **组队** | GET `/api/teams` | 获取团队列表 |
 | | POST `/api/teams` | 创建团队 |
 | | POST `/api/teams/:team_id/join` | 加入团队 |
+| | POST `/api/teams/:team_id/leave` | 退出团队 |
+| | GET `/api/teams/:team_id/members` | 获取团队成员 |
 | | GET `/api/teams/user` | 获取用户团队 |
 | **竞赛** | GET `/api/competitions` | 获取竞赛列表 |
 | | POST `/api/competitions` | 创建竞赛 |
@@ -187,7 +191,7 @@ story-chain/
 | Phase 1: 安全修复与基础架构 | ✅ 已完成 | 2026-04-29 |
 | Phase 2: 测试先行 - 后端测试补充 | ✅ 已完成 | 2026-04-29 |
 | Phase 3: 游戏模式差异化逻辑 | ✅ 已完成 | 2026-04-29 |
-| Phase 4: 前端功能完善 | 📅 待开始 | - |
+| Phase 4: 前端功能完善 | ✅ 已完成 | 2026-04-29 |
 | Phase 5: 积分与体验优化 | 📅 待开始 | - |
 | Phase 6: 集成测试与验收 | 📅 待开始 | - |
 
@@ -213,6 +217,17 @@ npx jest
 | tests/team.test.ts | 团队创建/加入/查询/竞赛创建/加入 | 13 |
 
 **总计：57 个测试，7 个测试套件，全部通过**
+
+## 前端页面路由
+
+| 路由 | 页面 | 说明 |
+|------|------|------|
+| `/` | 故事列表 | 已发布/接龙中、搜索、排序 |
+| `/story/:id` | 故事详情 | 查看接龙、树形分支、投币、AI润色 |
+| `/profile` | 个人中心 | 资料、背包、道具兑换 |
+| `/teams` | 团队管理 | 创建/加入/查看成员/退出团队 |
+| `/competitions` | 竞赛列表 | 创建/参赛/排行榜 |
+| `/my-stories` | 我的故事 | 用户创建的故事列表 |
 
 ## License
 

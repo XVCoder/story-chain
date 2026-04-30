@@ -7,7 +7,7 @@
 | Phase 1: 安全修复与基础架构 | ✅ 已完成 | `Phase 1: Security fixes, Vue Router integration, and architecture improvements` |
 | Phase 2: 测试先行 - 后端测试补充 | ✅ 已完成 | `Phase 2: Complete backend API test coverage with 45 passing tests` |
 | Phase 3: 游戏模式差异化逻辑 | ✅ 已完成 | `Phase 3: Game mode differentiation logic with 57 passing tests` |
-| Phase 4: 前端功能完善 | 📅 待开始 | - |
+| Phase 4: 前端功能完善 | ✅ 已完成 | `Phase 4: Frontend team/competition UI, search, node tree, my stories` |
 | Phase 5: 积分与体验优化 | 📅 待开始 | - |
 | Phase 6: 集成测试与验收 | 📅 待开始 | - |
 
@@ -54,14 +54,16 @@
 - [x] **测试结果：57 tests passed, 7 test suites**
 - [x] **阶段完成：git commit**
 
-### Phase 4: 前端功能完善
+### Phase 4: 前端功能完善 ✅ 已完成
 
-- [ ] 4.1 组队管理系统UI（创建/加入/查看/退出团队）
-- [ ] 4.2 竞赛系统UI + 排行榜展示
-- [ ] 4.3 节点树形分支展示
-- [ ] 4.4 我的故事页面
-- [ ] 4.5 搜索功能
-- [ ] **阶段完成：git commit**
+- [x] 4.0 后端新增 API：退出团队、团队成员、我的故事、搜索故事
+- [x] 4.1 组队管理系统 UI（TeamPage.vue）：创建/加入/查看成员/退出团队
+- [x] 4.2 竞赛系统 UI + 排行榜展示（CompetitionPage.vue）：创建/参赛/排行榜
+- [x] 4.3 节点树形分支展示（StoryDetail.vue）：按 parent_id 构建树形结构
+- [x] 4.4 我的故事页面（MyStories.vue）：列出用户创建的故事
+- [x] 4.5 搜索功能（StoryList.vue）：按标题/摘要客户端过滤
+- [x] 导航栏更新：添加团队/竞赛/我的故事入口
+- [x] **阶段完成：git commit**
 
 ### Phase 5: 积分与体验优化
 
