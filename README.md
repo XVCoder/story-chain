@@ -13,29 +13,34 @@
 ## 功能特性
 
 ### 核心玩法
+
 - 📝 **故事创作**: 发起人拟定故事概要和开头
 - 🔗 **故事接龙**: 参与者可添加接龙节点
 - 🪙 **投币系统**: 读者通过投币选出最佳节点版本
 - 🏆 **节点选择**: 发起人在达到最大节点数后决定是否发布
 
 ### 游戏模式
+
 - **自由模式 (Free)**: 无限制接龙创作，支持 `max_nodes=0` 无限节点
 - **精选模式 (Selected)**: 管理员精选推荐，积分 1.5x 加成
 - **Solo模式 (Solo)**: 单人独立创作，`max_nodes` 固定为 1，不可接龙
 - **组队竞赛 (Team)**: 团队协作竞赛，仅团队成员可参与，积分计入排行榜
 
 ### 互动功能
+
 - ❤️ **点赞**: 支持对故事点赞
 - ⭐ **收藏**: 支持收藏故事
 - 🪙 **投币**: 支持对故事节点投币支持
 - 👁️ **阅读量统计**: 自动记录故事阅读量
 
 ### 积分与道具系统
+
 - 基于阅读量和投币占比计算积分
 - 积分可兑换道具（AI润色、提示、跳过等）
 - AI润色功能：对选中节点进行AI优化
 
 ### 组队与竞赛
+
 - 团队创建与管理
 - 竞赛创建与参与
 - 团队排行榜
@@ -67,7 +72,7 @@ npx tsc
 node dist/index.js
 ```
 
-后端运行在 http://localhost:8080
+后端运行在 <http://localhost:8080>
 
 **启动前端开发服务器：**
 
@@ -76,12 +81,12 @@ node dist/index.js
 npx vite --host 127.0.0.1 --port 3000
 ```
 
-前端运行在 http://127.0.0.1:3000
+前端运行在 132155<http://127.0.0.1:3000>
 
 ### 访问文档
 
-- **Swagger API文档**: http://localhost:8080/api-docs
-- **API JSON规范**: http://localhost:8080/api-docs.json
+- **Swagger API文档**: <http://localhost:8080/api-docs>
+- **API JSON规范**: <http://localhost:8080/api-docs.json>
 
 ## 项目结构
 
@@ -139,39 +144,39 @@ story-chain/
 
 ## API 列表
 
-| 类别 | 端点 | 说明 |
-|------|------|------|
-| **认证** | POST `/api/users/register` | 用户注册 |
-| | POST `/api/users/login` | 用户登录 |
-| | GET `/api/users/profile` | 获取用户资料 |
-| | PUT `/api/users/profile` | 更新用户资料 |
-| **故事** | GET `/api/stories` | 获取故事列表（支持分页/筛选/排序） |
-| | GET `/api/stories/search` | 搜索故事（按标题/摘要） |
-| | GET `/api/stories/my` | 获取我的故事列表 |
-| | GET `/api/stories/:id` | 获取故事详情 |
-| | POST `/api/stories` | 创建故事 |
-| | PUT `/api/stories/:id` | 更新故事 |
-| | DELETE `/api/stories/:id` | 删除故事 |
-| **节点** | GET `/api/nodes/:story_id` | 获取故事节点 |
-| | POST `/api/nodes` | 添加接龙节点 |
-| | PUT `/api/nodes/:node_id/select` | 选择节点 |
-| **互动** | POST `/api/stories/:story_id/like` | 点赞/取消点赞 |
-| | POST `/api/stories/:story_id/favorite` | 收藏/取消收藏 |
-| | POST `/api/nodes/:node_id/coin` | 投币支持节点 |
-| | GET `/api/favorites` | 获取收藏列表 |
-| **道具** | POST `/api/inventory/exchange` | 积分兑换道具 |
-| | GET `/api/inventory` | 获取背包 |
-| | POST `/api/inventory/use` | 使用道具 |
-| **组队** | GET `/api/teams` | 获取团队列表 |
-| | POST `/api/teams` | 创建团队 |
-| | POST `/api/teams/:team_id/join` | 加入团队 |
-| | POST `/api/teams/:team_id/leave` | 退出团队 |
-| | GET `/api/teams/:team_id/members` | 获取团队成员 |
-| | GET `/api/teams/user` | 获取用户团队 |
-| **竞赛** | GET `/api/competitions` | 获取竞赛列表 |
-| | POST `/api/competitions` | 创建竞赛 |
-| | POST `/api/competitions/join` | 加入竞赛 |
-| | GET `/api/competitions/:competition_id/leaderboard` | 获取竞赛排行榜 |
+| 类别     | 端点                                                  | 说明                 |
+| ------ | --------------------------------------------------- | ------------------ |
+| **认证** | POST `/api/users/register`                          | 用户注册               |
+| <br /> | POST `/api/users/login`                             | 用户登录               |
+| <br /> | GET `/api/users/profile`                            | 获取用户资料             |
+| <br /> | PUT `/api/users/profile`                            | 更新用户资料             |
+| **故事** | GET `/api/stories`                                  | 获取故事列表（支持分页/筛选/排序） |
+| <br /> | GET `/api/stories/search`                           | 搜索故事（按标题/摘要）       |
+| <br /> | GET `/api/stories/my`                               | 获取我的故事列表           |
+| <br /> | GET `/api/stories/:id`                              | 获取故事详情             |
+| <br /> | POST `/api/stories`                                 | 创建故事               |
+| <br /> | PUT `/api/stories/:id`                              | 更新故事               |
+| <br /> | DELETE `/api/stories/:id`                           | 删除故事               |
+| **节点** | GET `/api/nodes/:story_id`                          | 获取故事节点             |
+| <br /> | POST `/api/nodes`                                   | 添加接龙节点             |
+| <br /> | PUT `/api/nodes/:node_id/select`                    | 选择节点               |
+| **互动** | POST `/api/stories/:story_id/like`                  | 点赞/取消点赞            |
+| <br /> | POST `/api/stories/:story_id/favorite`              | 收藏/取消收藏            |
+| <br /> | POST `/api/nodes/:node_id/coin`                     | 投币支持节点             |
+| <br /> | GET `/api/favorites`                                | 获取收藏列表             |
+| **道具** | POST `/api/inventory/exchange`                      | 积分兑换道具             |
+| <br /> | GET `/api/inventory`                                | 获取背包               |
+| <br /> | POST `/api/inventory/use`                           | 使用道具               |
+| **组队** | GET `/api/teams`                                    | 获取团队列表             |
+| <br /> | POST `/api/teams`                                   | 创建团队               |
+| <br /> | POST `/api/teams/:team_id/join`                     | 加入团队               |
+| <br /> | POST `/api/teams/:team_id/leave`                    | 退出团队               |
+| <br /> | GET `/api/teams/:team_id/members`                   | 获取团队成员             |
+| <br /> | GET `/api/teams/user`                               | 获取用户团队             |
+| **竞赛** | GET `/api/competitions`                             | 获取竞赛列表             |
+| <br /> | POST `/api/competitions`                            | 创建竞赛               |
+| <br /> | POST `/api/competitions/join`                       | 加入竞赛               |
+| <br /> | GET `/api/competitions/:competition_id/leaderboard` | 获取竞赛排行榜            |
 
 ## TDD 开发流程
 
@@ -180,22 +185,22 @@ story-chain/
 1. 每阶段开始前编写测试
 2. 实现功能使测试通过
 3. 重构优化代码
-4. 更新 TDD_PLAN.md 进度
+4. 更新 TDD\_PLAN.md 进度
 5. 更新 README.md 文档
 6. 使用 git 提交代码
 
-详细开发计划请查看 [TDD_PLAN.md](./TDD_PLAN.md)。
+详细开发计划请查看 [TDD\_PLAN.md](./TDD_PLAN.md)。
 
 ## 开发阶段状态
 
-| 阶段 | 状态 | 日期 |
-|------|------|------|
-| Phase 1: 安全修复与基础架构 | ✅ 已完成 | 2026-04-29 |
+| 阶段                     | 状态    | 日期         |
+| ---------------------- | ----- | ---------- |
+| Phase 1: 安全修复与基础架构     | ✅ 已完成 | 2026-04-29 |
 | Phase 2: 测试先行 - 后端测试补充 | ✅ 已完成 | 2026-04-29 |
-| Phase 3: 游戏模式差异化逻辑 | ✅ 已完成 | 2026-04-29 |
-| Phase 4: 前端功能完善 | ✅ 已完成 | 2026-04-29 |
-| Phase 5: 积分与体验优化 | ✅ 已完成 | 2026-04-29 |
-| Phase 6: 集成测试与验收 | ✅ 已完成 | 2026-04-29 |
+| Phase 3: 游戏模式差异化逻辑     | ✅ 已完成 | 2026-04-29 |
+| Phase 4: 前端功能完善        | ✅ 已完成 | 2026-04-29 |
+| Phase 5: 积分与体验优化       | ✅ 已完成 | 2026-04-29 |
+| Phase 6: 集成测试与验收       | ✅ 已完成 | 2026-04-29 |
 
 ## 项目完成状态
 
@@ -212,30 +217,30 @@ npx jest
 
 ### 测试覆盖
 
-| 测试文件 | 覆盖范围 | 测试数 |
-|----------|----------|--------|
-| tests/integration.test.ts | 全链路流程 + 边界情况 + 未测试端点覆盖 | 38 |
-| tests/user.test.ts | 用户注册/登录/资料获取 | 5 |
-| tests/story.test.ts | 故事CRUD/节点添加/点赞/收藏 | 6 |
-| tests/interaction.test.ts | 投币/点赞/收藏/收藏列表 | 8 |
-| tests/node.test.ts | 节点添加/获取/选择/最大节点限制/权限 | 8 |
-| tests/inventory.test.ts | 积分兑换/背包/道具使用/权限 | 5 |
-| tests/mode.test.ts | 游戏模式差异化逻辑（Solo/自由/团队/排行榜） | 12 |
-| tests/team.test.ts | 团队创建/加入/查询/竞赛创建/加入 | 13 |
+| 测试文件                      | 覆盖范围                      | 测试数 |
+| ------------------------- | ------------------------- | --- |
+| tests/integration.test.ts | 全链路流程 + 边界情况 + 未测试端点覆盖    | 38  |
+| tests/user.test.ts        | 用户注册/登录/资料获取              | 5   |
+| tests/story.test.ts       | 故事CRUD/节点添加/点赞/收藏         | 6   |
+| tests/interaction.test.ts | 投币/点赞/收藏/收藏列表             | 8   |
+| tests/node.test.ts        | 节点添加/获取/选择/最大节点限制/权限      | 8   |
+| tests/inventory.test.ts   | 积分兑换/背包/道具使用/权限           | 5   |
+| tests/mode.test.ts        | 游戏模式差异化逻辑（Solo/自由/团队/排行榜） | 12  |
+| tests/team.test.ts        | 团队创建/加入/查询/竞赛创建/加入        | 13  |
 
 **总计：95 个测试，8 个测试套件，全部通过**
 
 ## 前端页面路由
 
-| 路由 | 页面 | 说明 | 权限 |
-|------|------|------|------|
-| `/login` | 登录/注册 | 登录前唯一可访问页面 | 公开 |
-| `/home` | 故事列表 | 已发布/接龙中、搜索、排序 | 需登录 |
-| `/story/:id` | 故事详情 | 查看接龙、树形分支、投币、AI润色 | 需登录 |
-| `/profile` | 个人中心 | 资料、背包、道具兑换 | 需登录 |
-| `/teams` | 团队管理 | 创建/加入/查看成员/退出团队 | 需登录 |
-| `/competitions` | 竞赛列表 | 创建/参赛/排行榜 | 需登录 |
-| `/my-stories` | 我的故事 | 用户创建的故事列表 | 需登录 |
+| 路由              | 页面    | 说明                | 权限  |
+| --------------- | ----- | ----------------- | --- |
+| `/login`        | 登录/注册 | 登录前唯一可访问页面        | 公开  |
+| `/home`         | 故事列表  | 已发布/接龙中、搜索、排序     | 需登录 |
+| `/story/:id`    | 故事详情  | 查看接龙、树形分支、投币、AI润色 | 需登录 |
+| `/profile`      | 个人中心  | 资料、背包、道具兑换        | 需登录 |
+| `/teams`        | 团队管理  | 创建/加入/查看成员/退出团队   | 需登录 |
+| `/competitions` | 竞赛列表  | 创建/参赛/排行榜         | 需登录 |
+| `/my-stories`   | 我的故事  | 用户创建的故事列表         | 需登录 |
 
 ## 登录流程
 

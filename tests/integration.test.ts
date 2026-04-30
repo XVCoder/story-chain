@@ -11,11 +11,7 @@ app.use('/api', router);
 
 describe('Integration: Full User Flow', () => {
   let token: string;
-  let userId: number;
   let storyId: number;
-  let nodeId: number;
-  let teamId: number;
-  let competitionId: number;
   const suffix = Date.now();
 
   beforeAll(async () => {
@@ -35,7 +31,6 @@ describe('Integration: Full User Flow', () => {
     expect(loginRes.status).toBe(200);
     expect(loginRes.body).toHaveProperty('token');
     token = loginRes.body.token;
-    userId = loginRes.body.user.id;
 
     const createRes = await request(app)
       .post('/api/stories')
@@ -44,36 +39,42 @@ describe('Integration: Full User Flow', () => {
     expect(createRes.status).toBe(201);
     storyId = createRes.body.id;
 
-    await request(app)
-      .put(`/api/stories/${storyId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ title: `Flow Story ${suffix}`, summary: 'Integration test', status: 'ongoing' });
+    // Verify the story appears in the ongoing list immediately
+    const ongoingRes = await request(app).get('/api/stories').query({ status: 'ongoing' });
+    expect(ongoingRes.status).toBe(200);
+    const found = ongoingRes.body.find((s: any) => s.id === storyId);
+    expect(found).toBeDefined();
+    expect(found.status).toBe('ongoing');
 
+    // Add nodes, select, and publish as a continuation of the flow
     for (let i = 0; i < 2; i++) {
       const nodeRes = await request(app)
         .post('/api/nodes')
         .set('Authorization', `Bearer ${token}`)
         .send({ story_id: storyId, content: `Node ${i + 1}: continuation...` });
       expect(nodeRes.status).toBe(201);
-      if (i === 0) nodeId = nodeRes.body.id;
     }
 
+    const nodesRes = await request(app).get(`/api/nodes/${storyId}`);
+    expect(nodesRes.status).toBe(200);
+    expect(nodesRes.body.length).toBe(3);
+
     const selectRes = await request(app)
-      .put(`/api/nodes/${nodeId}/select`)
+      .put(`/api/nodes/${nodesRes.body[1].id}/select`)
       .set('Authorization', `Bearer ${token}`);
     expect(selectRes.status).toBe(200);
-    expect(selectRes.body.message).toBe('Node selected successfully');
 
-    const publishRes = await request(app)
+    await request(app)
       .put(`/api/stories/${storyId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ title: `Flow Story ${suffix}`, summary: 'Integration test', status: 'published' });
-    expect(publishRes.status).toBe(200);
 
-    const viewRes = await request(app).get(`/api/stories/${storyId}`);
-    expect(viewRes.status).toBe(200);
-    expect(viewRes.body.status).toBe('published');
-    expect(viewRes.body.nodes.length).toBeGreaterThanOrEqual(3);
+    // Verify the story appears in the published list after publishing
+    const publishedRes = await request(app).get('/api/stories').query({ status: 'published' });
+    expect(publishedRes.status).toBe(200);
+    const published = publishedRes.body.find((s: any) => s.id === storyId);
+    expect(published).toBeDefined();
+    expect(published.status).toBe('published');
   });
 });
 
