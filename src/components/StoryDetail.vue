@@ -18,7 +18,6 @@ const showHint = ref(false);
 const showSkip = ref(false);
 const hintContent = ref('');
 const timeline = ref<{ nodes: any[]; full_text: string; node_count: number } | null>(null);
-const showTimeline = ref(false);
 const modeText = computed(() => {
  const modes: Record<string, string> = {
  free: '自由',
@@ -261,9 +260,6 @@ onMounted(() => {
           <ElButton @click="handleFavorite" type="text">
             ⭐ {{ story.favorites }}
           </ElButton>
-          <ElButton @click="showTimeline = true" type="primary" plain>
-            主线预览
-          </ElButton>
           <ElButton v-if="isAuthor" @click="handleAutoSelect" type="warning" plain>自动更新主线</ElButton>
           <ElButton @click="showAddNode = true" type="primary" v-if="canAddNode">
             添加接龙
@@ -276,6 +272,28 @@ onMounted(() => {
           </ElButton>
           <ElButton @click="showHint = true" type="info" v-if="store.user">提示</ElButton>
           <ElButton @click="showSkip = true" type="danger" plain v-if="store.user">跳过</ElButton>
+        </div>
+      </ElCard>
+
+      <ElCard v-if="timeline && timeline.nodes.length > 0" class="timeline-card">
+        <div class="timeline-header">
+          <h2>主线故事</h2>
+          <ElTag type="success" size="small">共 {{ timeline.node_count }} 段</ElTag>
+        </div>
+        <div class="timeline-inline">
+          <div v-for="(node, idx) in timeline.nodes" :key="node.id" class="tl-node">
+            <div class="tl-node-marker">
+              <div class="tl-dot" :class="{ active: idx === timeline.nodes.length - 1 }"></div>
+              <div v-if="idx < timeline.nodes.length - 1" class="tl-line"></div>
+            </div>
+            <div class="tl-content">
+              <div class="tl-meta">
+                <span class="tl-index">第 {{ idx + 1 }} 段</span>
+                <span class="tl-coins">💰 {{ node.coins }}</span>
+              </div>
+              <p class="tl-text">{{ node.content }}</p>
+            </div>
+          </div>
         </div>
       </ElCard>
 
@@ -350,25 +368,6 @@ onMounted(() => {
         <template #footer>
           <ElButton @click="showSkip = false">取消</ElButton>
           <ElButton type="primary" @click="handleUseSkip">确认使用</ElButton>
-        </template>
-      </ElDialog>
-
-      <ElDialog v-model="showTimeline" title="主线故事预览" width="700px" @close="showTimeline = false">
-        <div v-if="timeline" class="timeline-content">
-          <ElTag type="success" class="timeline-count">共 {{ timeline.node_count }} 段</ElTag>
-          <div v-for="(node, idx) in timeline.nodes" :key="node.id" class="timeline-node">
-            <div class="timeline-node-header">
-              <span class="timeline-node-num">第 {{ idx + 1 }} 段</span>
-              <span class="timeline-node-coins">💰 {{ node.coins }}</span>
-            </div>
-            <p class="timeline-node-text">{{ node.content }}</p>
-            <div v-if="idx < timeline.nodes.length - 1" class="timeline-connector">↓</div>
-          </div>
-          <p v-if="timeline.nodes.length === 0" class="timeline-empty">主线为空，等待更多接龙和投币...</p>
-        </div>
-        <div v-else class="timeline-loading">加载中...</div>
-        <template #footer>
-          <ElButton @click="showTimeline = false">关闭</ElButton>
         </template>
       </ElDialog>
     </template>
@@ -511,53 +510,93 @@ onMounted(() => {
   gap: 10px;
 }
 
-.timeline-content {
-  max-height: 60vh;
-  overflow-y: auto;
+.fab-icon {
+  line-height: 1;
 }
 
-.timeline-count {
+.timeline-card {
+  margin-top: 20px;
+  border-left: 3px solid #409eff;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
-.timeline-node {
-  padding: 12px 0;
+.timeline-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #303133;
 }
 
-.timeline-node-header {
+.timeline-inline {
+  padding-left: 8px;
+}
+
+.tl-node {
+  display: flex;
+  gap: 16px;
+}
+
+.tl-node-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.tl-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #dcdfe6;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.tl-dot.active {
+  background: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.2);
+}
+
+.tl-line {
+  width: 2px;
+  flex: 1;
+  background: #e4e7ed;
+  min-height: 24px;
+}
+
+.tl-content {
+  flex: 1;
+  padding-bottom: 20px;
+}
+
+.tl-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-.timeline-node-num {
-  font-weight: bold;
+.tl-index {
+  font-size: 13px;
+  font-weight: 600;
   color: #409eff;
-  font-size: 14px;
 }
 
-.timeline-node-coins {
+.tl-coins {
+  font-size: 13px;
   color: #e6a23c;
 }
 
-.timeline-node-text {
+.tl-text {
+  margin: 0;
   color: #303133;
   line-height: 1.8;
-  margin: 0;
   white-space: pre-wrap;
-}
-
-.timeline-connector {
-  text-align: center;
-  color: #dcdfe6;
-  font-size: 20px;
-  padding: 8px 0;
-}
-
-.timeline-empty, .timeline-loading {
-  text-align: center;
-  color: #909399;
-  padding: 60px;
 }
 </style>
