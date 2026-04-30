@@ -8,8 +8,6 @@ import { inventoryAPI, authAPI } from '../api';
 const router = useRouter();
 
 const emit = defineEmits<{
-  (e: 'showLogin'): void;
-  (e: 'showRegister'): void;
   (e: 'createStory'): void;
 }>(); 
 
@@ -20,7 +18,7 @@ const isLoggedIn = computed(() => !!store.user);
 const handleLogout = () => {
   localStorage.removeItem('token');
   setUser(null);
-  router.push('/');
+  router.push('/login');
 };
 
 const refreshInventory = async () => {
@@ -53,7 +51,7 @@ const refreshUserPoints = async () => {
 };
 
 const goHome = () => {
-  router.push('/');
+  router.push('/home');
 };
 
 const itemName = (type: string) => {
@@ -73,32 +71,25 @@ defineExpose({ refreshInventory, refreshUserPoints });
       </div>
       
       <nav class="nav">
-        <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/' }" @click="goHome">首页</span>
+        <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/home' }" @click="router.push('/home')">首页</span>
         <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/teams' }" @click="router.push('/teams')">团队</span>
         <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/competitions' }" @click="router.push('/competitions')">竞赛</span>
-        <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/my-stories' }" @click="router.push('/my-stories')" v-if="isLoggedIn">我的故事</span>
+        <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/my-stories' }" @click="router.push('/my-stories')">我的故事</span>
       </nav>
       
       <div class="header-right">
-        <template v-if="isLoggedIn">
-          <ElDropdown>
-            <span class="user-info">
-              <ElBadge :value="store.user?.points" type="warning" class="points-badge" />
-              <span class="username">{{ store.user?.username }}</span>
-            </span>
-            <template #dropdown>
-              <ElDropdownItem @click="emit('createStory')">创建故事</ElDropdownItem>
-              <ElDropdownItem @click="showInventory = !showInventory">背包</ElDropdownItem>
-              <ElDropdownItem @click="router.push('/profile')">个人中心</ElDropdownItem>
-              <ElDropdownItem divided @click="handleLogout">退出登录</ElDropdownItem>
-            </template>
-          </ElDropdown>
-        </template>
-        
-        <template v-else>
-          <ElButton type="text" @click="emit('showRegister')">注册</ElButton>
-          <ElButton type="primary" @click="emit('showLogin')">登录</ElButton>
-        </template>
+        <ElDropdown>
+          <span class="user-info">
+            <ElBadge :value="store.user?.points" type="warning" class="points-badge" />
+            <span class="username">{{ store.user?.username }}</span>
+          </span>
+          <template #dropdown>
+            <ElDropdownItem @click="emit('createStory')">创建故事</ElDropdownItem>
+            <ElDropdownItem @click="showInventory = !showInventory">背包</ElDropdownItem>
+            <ElDropdownItem @click="router.push('/profile')">个人中心</ElDropdownItem>
+            <ElDropdownItem divided @click="handleLogout">退出登录</ElDropdownItem>
+          </template>
+        </ElDropdown>
       </div>
     </div>
 

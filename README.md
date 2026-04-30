@@ -121,13 +121,15 @@ story-chain/
 │   ├── store/index.ts      # 响应式状态管理
 │   ├── types/index.ts      # 前端类型定义
 │   └── components/         # 组件
-│       ├── Header.vue            # 导航栏
+│       ├── Header.vue            # 导航栏（仅在登录后显示）
+│       ├── LoginPage.vue         # 登录/注册页面
 │       ├── StoryList.vue         # 故事列表
 │       ├── StoryCard.vue         # 故事卡片
 │       ├── StoryDetail.vue       # 故事详情与接龙
 │       ├── CreateStoryModal.vue  # 创建故事弹窗
-│       ├── LoginModal.vue        # 登录弹窗
-│       ├── RegisterModal.vue     # 注册弹窗
+│       ├── TeamPage.vue          # 团队管理
+│       ├── CompetitionPage.vue   # 竞赛与排行榜
+│       ├── MyStories.vue         # 我的故事
 │       └── ProfilePage.vue       # 个人中心
 │
 └── tests/                  # 测试
@@ -225,14 +227,19 @@ npx jest
 
 ## 前端页面路由
 
-| 路由 | 页面 | 说明 |
-|------|------|------|
-| `/` | 故事列表 | 已发布/接龙中、搜索、排序 |
-| `/story/:id` | 故事详情 | 查看接龙、树形分支、投币、AI润色 |
-| `/profile` | 个人中心 | 资料、背包、道具兑换 |
-| `/teams` | 团队管理 | 创建/加入/查看成员/退出团队 |
-| `/competitions` | 竞赛列表 | 创建/参赛/排行榜 |
-| `/my-stories` | 我的故事 | 用户创建的故事列表 |
+| 路由 | 页面 | 说明 | 权限 |
+|------|------|------|------|
+| `/login` | 登录/注册 | 登录前唯一可访问页面 | 公开 |
+| `/home` | 故事列表 | 已发布/接龙中、搜索、排序 | 需登录 |
+| `/story/:id` | 故事详情 | 查看接龙、树形分支、投币、AI润色 | 需登录 |
+| `/profile` | 个人中心 | 资料、背包、道具兑换 | 需登录 |
+| `/teams` | 团队管理 | 创建/加入/查看成员/退出团队 | 需登录 |
+| `/competitions` | 竞赛列表 | 创建/参赛/排行榜 | 需登录 |
+| `/my-stories` | 我的故事 | 用户创建的故事列表 | 需登录 |
+
+## 登录流程
+
+未登录用户访问任何功能页面时，会自动跳转到 `/login` 登录页面。登录页面同时支持登录和注册功能，登录成功后自动跳转到 `/home`。
 
 ## License
 

@@ -1,81 +1,77 @@
 <script setup lang="ts">import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import Header from './components/Header.vue';
-import LoginModal from './components/LoginModal.vue';
-import RegisterModal from './components/RegisterModal.vue';
 import CreateStoryModal from './components/CreateStoryModal.vue';
 import { store, setUser, setStories, setOngoingStories } from './store';
 import { authAPI, storyAPI, inventoryAPI } from './api';
-const loginModal = ref<InstanceType<typeof LoginModal> | null>(null);
-const registerModal = ref<InstanceType<typeof RegisterModal> | null>(null);
+
+const router = useRouter();
 const createStoryModal = ref<InstanceType<typeof CreateStoryModal> | null>(null);
 const headerRef = ref<InstanceType<typeof Header> | null>(null);
+
+const isLoggedIn = () => !!store.user;
+
 const fetchStories = async () => {
- try {
- const [publishedResponse, ongoingResponse] = await Promise.all([
- storyAPI.getAll({ status: 'published' }),
- storyAPI.getAll({ status: 'ongoing' }),
- ]);
- setStories(publishedResponse.data);
- setOngoingStories(ongoingResponse.data);
- }
- catch (error) {
- console.error('Failed to fetch stories');
- }
+  try {
+    const [publishedResponse, ongoingResponse] = await Promise.all([
+      storyAPI.getAll({ status: 'published' }),
+      storyAPI.getAll({ status: 'ongoing' }),
+    ]);
+    setStories(publishedResponse.data);
+    setOngoingStories(ongoingResponse.data);
+  } catch {
+    console.error('Failed to fetch stories');
+  }
 };
-const handleShowLogin = () => {
- loginModal.value?.show();
-};
-const handleShowRegister = () => {
- registerModal.value?.show();
-};
+
 const handleShowCreateStory = () => {
- if (!store.user) {
- ElMessage.warning('请先登录');
- loginModal.value?.show();
- return;
- }
- createStoryModal.value?.show();
+  if (!isLoggedIn()) {
+    ElMessage.warning('请先登录');
+    router.push('/login');
+    return;
+  }
+  createStoryModal.value?.show();
 };
-const handleLogin = async () => {
- await fetchStories();
- headerRef.value?.refreshInventory();
-};
+
 const handleCreated = () => {
- fetchStories();
+  fetchStories();
 };
+
 onMounted(async () => {
- const token = localStorage.getItem('token');
- if (token) {
- try {
- const response = await authAPI.getProfile();
- setUser(response.data);
- const inventoryResponse = await inventoryAPI.get();
- store.inventory = inventoryResponse.data;
- }
- catch (error) {
- localStorage.removeItem('token');
- }
- }
- await fetchStories();
+  const token = localStorage.getItem('token');
+  if (token) {
+    try {
+      const response = await authAPI.getProfile();
+      setUser(response.data);
+      const inventoryResponse = await inventoryAPI.get();
+      store.inventory = inventoryResponse.data;
+      await fetchStories();
+      if (router.currentRoute.value.name === 'login') {
+        router.push('/home');
+      }
+    } catch {
+      localStorage.removeItem('token');
+      if (router.currentRoute.value.name !== 'login') {
+        router.push('/login');
+      }
+    }
+  }
 });
 </script>
 
 <template>
   <div class="app">
-    <Header 
+    <Header
+      v-if="isLoggedIn()"
       ref="headerRef"
-      @show-login="handleShowLogin"
-      @show-register="handleShowRegister"
       @create-story="handleShowCreateStory"
     />
-    
-    <main class="main-content">
+
+    <main class="main-content" :class="{ 'no-header': !isLoggedIn() }">
       <router-view />
     </main>
-    
-    <LoginModal ref="loginModal" @login="handleLogin" />
-    <RegisterModal ref="registerModal" />
+
     <CreateStoryModal ref="createStoryModal" @created="handleCreated" />
   </div>
 </template>
@@ -90,5 +86,10 @@ onMounted(async () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.main-content.no-header {
+  padding: 0;
+  max-width: none;
 }
 </style>
