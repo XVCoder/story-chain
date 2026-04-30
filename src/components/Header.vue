@@ -1,19 +1,13 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElButton, ElDropdown, ElDropdownItem, ElBadge, ElMessage } from 'element-plus';
+import { ElDropdown, ElDropdownItem, ElBadge, ElMessage } from 'element-plus';
 import { store, setUser } from '../store';
 import { inventoryAPI, authAPI } from '../api';
 
 const router = useRouter();
 
-const emit = defineEmits<{
-  (e: 'createStory'): void;
-}>(); 
-
 const showInventory = ref(false);
-
-const isLoggedIn = computed(() => !!store.user);
 
 const handleLogout = () => {
   localStorage.removeItem('token');
@@ -84,7 +78,7 @@ defineExpose({ refreshInventory, refreshUserPoints });
             <span class="username">{{ store.user?.username }}</span>
           </span>
           <template #dropdown>
-            <ElDropdownItem @click="emit('createStory')">创建故事</ElDropdownItem>
+            <ElDropdownItem @click="router.push('/home')">创建故事</ElDropdownItem>
             <ElDropdownItem @click="showInventory = !showInventory">背包</ElDropdownItem>
             <ElDropdownItem @click="router.push('/profile')">个人中心</ElDropdownItem>
             <ElDropdownItem divided @click="handleLogout">退出登录</ElDropdownItem>
