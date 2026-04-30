@@ -34,6 +34,7 @@ export const storyAPI = {
   delete: (id: number) => api.delete(`/stories/${id}`),
   getMyStories: () => api.get('/stories/my'),
   search: (q: string) => api.get('/stories/search', { params: { q } }),
+  getTimeline: (storyId: number) => api.get(`/stories/${storyId}/timeline`),
 };
 
 export const nodeAPI = {
@@ -41,6 +42,7 @@ export const nodeAPI = {
     api.post('/nodes', data),
   getByStory: (story_id: number) => api.get(`/nodes/${story_id}`),
   select: (node_id: number) => api.put(`/nodes/${node_id}/select`),
+  autoSelect: (story_id: number) => api.post(`/nodes/${story_id}/auto-select`),
 };
 
 export const interactionAPI = {

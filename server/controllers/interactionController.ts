@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { queryAll, queryOne, execute } from '../db/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
+import { autoSelectMainLineInternal } from './nodeController.js';
 
 export const likeStory = (req: AuthRequest, res: Response) => {
   const { story_id } = req.params;
@@ -41,6 +42,12 @@ export const coinNode = (req: AuthRequest, res: Response) => {
   const user_id = req.user?.id;
   const { amount = 1 } = req.body;
 
+  const node = queryOne('SELECT id, story_id FROM story_nodes WHERE id = ?', [node_id]);
+
+  if (!node) {
+    return res.status(404).json({ message: 'Node not found' });
+  }
+
   const user = queryOne('SELECT points FROM users WHERE id = ?', [user_id]);
   
   if (!user) {
@@ -63,7 +70,9 @@ export const coinNode = (req: AuthRequest, res: Response) => {
 
   execute('UPDATE story_nodes SET coins = coins + ? WHERE id = ?', [amount, node_id]);
 
-  res.json({ message: 'Coins added' });
+  const selectedCount = autoSelectMainLineInternal(node.story_id);
+
+  res.json({ message: 'Coins added', timeline_nodes: selectedCount });
 };
 
 export const getUserFavorites = (req: AuthRequest, res: Response) => {

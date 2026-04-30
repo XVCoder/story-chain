@@ -90,6 +90,76 @@ export const selectNode = (req: AuthRequest, res: Response) => {
   res.json({ message: 'Node selected successfully' });
 };
 
+export const autoSelectMainLine = (req: AuthRequest, res: Response) => {
+  const { story_id } = req.params;
+
+  const story = queryOne('SELECT id FROM stories WHERE id = ?', [story_id]);
+  if (!story) {
+    return res.status(404).json({ message: 'Story not found' });
+  }
+
+  const selectedCount = autoSelectMainLineInternal(Number(story_id));
+
+  res.json({ message: `Main line auto-selected: ${selectedCount} nodes in chain`, nodes: selectedCount });
+};
+
+export function autoSelectMainLineInternal(story_id: number): number {
+  const root = queryOne('SELECT id FROM story_nodes WHERE story_id = ? AND parent_id IS NULL ORDER BY id ASC LIMIT 1', [story_id]);
+  if (!root) return 0;
+
+  execute('UPDATE story_nodes SET is_selected = FALSE WHERE story_id = ?', [story_id]);
+  execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [root.id]);
+
+  let count = 1;
+  let currentParentId = root.id;
+
+  while (true) {
+    const bestChild = queryOne(`
+      SELECT id, coins, created_at
+      FROM story_nodes
+      WHERE story_id = ? AND parent_id = ?
+      ORDER BY coins DESC, created_at ASC
+      LIMIT 1
+    `, [story_id, currentParentId]);
+
+    if (!bestChild || bestChild.coins <= 0) break;
+
+    execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [bestChild.id]);
+    currentParentId = bestChild.id;
+    count++;
+  }
+
+  return count;
+}
+
+export const getTimeline = (req: Request, res: Response) => {
+  const { story_id } = req.params;
+
+  const story = queryOne('SELECT id, title FROM stories WHERE id = ?', [story_id]);
+  if (!story) {
+    return res.status(404).json({ message: 'Story not found' });
+  }
+
+  autoSelectMainLineInternal(Number(story_id));
+
+  const timelineNodes = queryAll(`
+    SELECT id, content, author_id, coins, created_at
+    FROM story_nodes
+    WHERE story_id = ? AND is_selected = TRUE
+    ORDER BY id ASC
+  `, [story_id]) as any[];
+
+  const fullText = timelineNodes.map((n: any) => n.content).join('\n\n');
+
+  res.json({
+    story_id: story.id,
+    title: story.title,
+    nodes: timelineNodes,
+    full_text: fullText,
+    node_count: timelineNodes.length,
+  });
+};
+
 const calculatePoints = (story_id: number, mode: string, team_id: number | null) => {
   const story = queryOne('SELECT views, author_id FROM stories WHERE id = ?', [story_id]);
   if (!story) return;
@@ -119,10 +189,9 @@ const calculatePoints = (story_id: number, mode: string, team_id: number | null)
   });
 
   if (mode === 'team' && team_id) {
-    const nodePoints = nodes.reduce((sum: number, node: any) => sum + Math.floor((node.coins || 0) / (totalCoins || 1) * 100), 0);
     const competitionTeam = queryOne('SELECT id FROM competition_teams WHERE team_id = ?', [team_id]);
     if (competitionTeam) {
-      execute('UPDATE competition_teams SET score = score + ? WHERE team_id = ?', [nodePoints, team_id]);
+      execute('UPDATE competition_teams SET score = score + ? WHERE team_id = ?', [100, team_id]);
     }
   }
 };

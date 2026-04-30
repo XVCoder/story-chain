@@ -17,6 +17,8 @@ const showAIPolish = ref(false);
 const showHint = ref(false);
 const showSkip = ref(false);
 const hintContent = ref('');
+const timeline = ref<{ nodes: any[]; full_text: string; node_count: number } | null>(null);
+const showTimeline = ref(false);
 const modeText = computed(() => {
  const modes: Record<string, string> = {
  free: '自由',
@@ -77,6 +79,25 @@ const fetchStory = async () => {
  finally {
  loading.value = false;
  }
+};
+
+const fetchTimeline = async () => {
+  try {
+    const res = await storyAPI.getTimeline(Number(props.id));
+    timeline.value = res.data;
+  } catch {
+    console.error('Failed to fetch timeline');
+  }
+};
+
+const handleAutoSelect = async () => {
+  try {
+    await nodeAPI.autoSelect(Number(props.id));
+    ElMessage.success('主线已更新');
+    await fetchStory();
+  } catch {
+    ElMessage.error('主线更新失败');
+  }
 };
 const handleLike = async () => {
  if (!store.user) {
@@ -141,10 +162,11 @@ const handleCoin = async (nodeId: number) => {
  }
  const oldPoints = store.user.points;
  try {
- await interactionAPI.coin(nodeId, 1);
+ const res = await interactionAPI.coin(nodeId, 1);
  store.user.points = oldPoints - 1;
  ElMessage.success('投币成功');
  await fetchStory();
+ await fetchTimeline();
  }
  catch (error) {
  ElMessage.error('操作失败');
@@ -212,6 +234,7 @@ const goBack = () => {
 };
 onMounted(() => {
  fetchStory();
+ fetchTimeline();
 });
 </script>
 
@@ -236,8 +259,12 @@ onMounted(() => {
             👍 {{ story.likes }}
           </ElButton>
           <ElButton @click="handleFavorite" type="text">
-            ❤️ {{ story.favorites }}
+            ⭐ {{ story.favorites }}
           </ElButton>
+          <ElButton @click="showTimeline = true" type="primary" plain>
+            主线预览
+          </ElButton>
+          <ElButton v-if="isAuthor" @click="handleAutoSelect" type="warning" plain>自动更新主线</ElButton>
           <ElButton @click="showAddNode = true" type="primary" v-if="canAddNode">
             添加接龙
           </ElButton>
@@ -323,6 +350,25 @@ onMounted(() => {
         <template #footer>
           <ElButton @click="showSkip = false">取消</ElButton>
           <ElButton type="primary" @click="handleUseSkip">确认使用</ElButton>
+        </template>
+      </ElDialog>
+
+      <ElDialog v-model="showTimeline" title="主线故事预览" width="700px" @close="showTimeline = false">
+        <div v-if="timeline" class="timeline-content">
+          <ElTag type="success" class="timeline-count">共 {{ timeline.node_count }} 段</ElTag>
+          <div v-for="(node, idx) in timeline.nodes" :key="node.id" class="timeline-node">
+            <div class="timeline-node-header">
+              <span class="timeline-node-num">第 {{ idx + 1 }} 段</span>
+              <span class="timeline-node-coins">💰 {{ node.coins }}</span>
+            </div>
+            <p class="timeline-node-text">{{ node.content }}</p>
+            <div v-if="idx < timeline.nodes.length - 1" class="timeline-connector">↓</div>
+          </div>
+          <p v-if="timeline.nodes.length === 0" class="timeline-empty">主线为空，等待更多接龙和投币...</p>
+        </div>
+        <div v-else class="timeline-loading">加载中...</div>
+        <template #footer>
+          <ElButton @click="showTimeline = false">关闭</ElButton>
         </template>
       </ElDialog>
     </template>
@@ -463,5 +509,55 @@ onMounted(() => {
   margin-top: 12px;
   display: flex;
   gap: 10px;
+}
+
+.timeline-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.timeline-count {
+  margin-bottom: 16px;
+}
+
+.timeline-node {
+  padding: 12px 0;
+}
+
+.timeline-node-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.timeline-node-num {
+  font-weight: bold;
+  color: #409eff;
+  font-size: 14px;
+}
+
+.timeline-node-coins {
+  color: #e6a23c;
+}
+
+.timeline-node-text {
+  color: #303133;
+  line-height: 1.8;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.timeline-connector {
+  text-align: center;
+  color: #dcdfe6;
+  font-size: 20px;
+  padding: 8px 0;
+}
+
+.timeline-empty, .timeline-loading {
+  text-align: center;
+  color: #909399;
+  padding: 60px;
 }
 </style>

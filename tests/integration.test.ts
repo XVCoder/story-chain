@@ -428,3 +428,90 @@ describe('Boundary & Edge Cases', () => {
     });
   });
 });
+
+describe('Auto-select Main Line & Timeline', () => {
+  let token: string;
+  let otherToken: string;
+  let storyId: number;
+  let rootNodeId: number;
+  const suffix = Date.now();
+
+  beforeAll(async () => {
+    await initDatabase();
+
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: `autouser${suffix}`, password: 'testpass' });
+    const loginRes = await request(app)
+      .post('/api/users/login')
+      .send({ username: `autouser${suffix}`, password: 'testpass' });
+    token = loginRes.body.token;
+
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: `autoother${suffix}`, password: 'testpass' });
+    const otherLogin = await request(app)
+      .post('/api/users/login')
+      .send({ username: `autoother${suffix}`, password: 'testpass' });
+    otherToken = otherLogin.body.token;
+
+    const storyRes = await request(app)
+      .post('/api/stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: `Auto Story ${suffix}`, summary: 'Auto test', content: 'Root content', mode: 'free', max_nodes: 6 });
+    expect(storyRes.status).toBe(201);
+    storyId = storyRes.body.id;
+
+    const nodesRes = await request(app).get(`/api/nodes/${storyId}`);
+    rootNodeId = nodesRes.body[0].id;
+  });
+
+  it('should have multiple users submit branches under same parent', async () => {
+    const branch1 = await request(app)
+      .post('/api/nodes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ story_id: storyId, parent_id: rootNodeId, content: 'Branch 1 by author' });
+    expect(branch1.status).toBe(201);
+
+    const branch2 = await request(app)
+      .post('/api/nodes')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ story_id: storyId, parent_id: rootNodeId, content: 'Branch 2 by other' });
+    expect(branch2.status).toBe(201);
+
+    const nodes = await request(app).get(`/api/nodes/${storyId}`);
+    expect(nodes.status).toBe(200);
+    const children = nodes.body.filter((n: any) => n.parent_id === rootNodeId);
+    expect(children.length).toBe(2);
+  });
+
+  it('should select the branch with more coins after coining', async () => {
+    const nodes = await request(app).get(`/api/nodes/${storyId}`);
+    const branches = nodes.body.filter((n: any) => n.parent_id === rootNodeId);
+    const branch2Id = branches.sort((a: any, b: any) => b.id - a.id)[0].id;
+
+    await request(app)
+      .post(`/api/nodes/${branch2Id}/coin`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ amount: 3 });
+
+    const timelineRes = await request(app).get(`/api/stories/${storyId}/timeline`);
+    expect(timelineRes.status).toBe(200);
+    expect(timelineRes.body.node_count).toBe(2);
+    expect(timelineRes.body.nodes[1].id).toBe(branch2Id);
+  });
+
+  it('should select earliest branch when coins are tied', async () => {
+    const nodes = await request(app).get(`/api/nodes/${storyId}`);
+    const branch1 = nodes.body.filter((n: any) => n.parent_id === rootNodeId)[0];
+
+    await request(app)
+      .post(`/api/nodes/${branch1.id}/coin`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ amount: 3 });
+
+    const timelineRes = await request(app).get(`/api/stories/${storyId}/timeline`);
+    expect(timelineRes.status).toBe(200);
+    expect(timelineRes.body.nodes[1].id).toBeGreaterThan(0);
+  });
+});
