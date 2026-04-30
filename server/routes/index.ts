@@ -4,7 +4,7 @@ import { createStory, getStories, getStoryById, updateStory, deleteStory } from 
 import { addNode, getNodesByStory, selectNode } from '../controllers/nodeController.js';
 import { likeStory, favoriteStory, coinNode, getUserFavorites } from '../controllers/interactionController.js';
 import { exchangePoints, getUserInventory, useItem } from '../controllers/inventoryController.js';
-import { createTeam, joinTeam, getTeams, getUserTeams, createCompetition, joinCompetition, getCompetitions } from '../controllers/teamController.js';
+import { createTeam, joinTeam, getTeams, getUserTeams, createCompetition, joinCompetition, getCompetitions, getCompetitionLeaderboard } from '../controllers/teamController.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
@@ -41,5 +41,6 @@ router.get('/teams/user', authenticate, getUserTeams);
 router.post('/competitions', authenticate, createCompetition);
 router.post('/competitions/join', authenticate, joinCompetition);
 router.get('/competitions', getCompetitions);
+router.get('/competitions/:competition_id/leaderboard', getCompetitionLeaderboard);
 
 export default router;

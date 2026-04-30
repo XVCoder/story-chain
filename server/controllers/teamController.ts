@@ -54,11 +54,15 @@ export const createCompetition = (req: AuthRequest, res: Response) => {
   const { title, description, end_time } = req.body;
 
   try {
-    execute('INSERT INTO competitions (title, description, end_time) VALUES (?, ?, ?)', [title, description, end_time || null]);
+    execute('INSERT INTO competitions (title, description, end_time) VALUES (?, ?, ?)', [title, description || null, end_time || null]);
     const competition = queryOne('SELECT id FROM competitions WHERE title = ? ORDER BY id DESC LIMIT 1', [title]);
-    res.status(201).json({ id: competition?.id, title });
-  } catch (error) {
-    return res.status(400).json({ message: 'Error creating competition' });
+    if (!competition) {
+      return res.status(500).json({ message: 'Competition created but not found', title });
+    }
+    res.status(201).json({ id: competition.id, title });
+  } catch (error: any) {
+    const errMsg = error?.message || error?.toString() || 'Unknown error';
+    return res.status(400).json({ message: `Error creating competition: ${errMsg}` });
   }
 };
 
@@ -83,4 +87,23 @@ export const joinCompetition = (req: AuthRequest, res: Response) => {
 export const getCompetitions = (req: Request, res: Response) => {
   const competitions = queryAll('SELECT * FROM competitions ORDER BY start_time DESC') as any[];
   res.json(competitions);
+};
+
+export const getCompetitionLeaderboard = (req: Request, res: Response) => {
+  const { competition_id } = req.params;
+
+  const competition = queryOne('SELECT id, title FROM competitions WHERE id = ?', [competition_id]);
+  if (!competition) {
+    return res.status(404).json({ message: 'Competition not found' });
+  }
+
+  const leaderboard = queryAll(`
+    SELECT t.id, t.name, ct.score
+    FROM competition_teams ct
+    JOIN teams t ON t.id = ct.team_id
+    WHERE ct.competition_id = ?
+    ORDER BY ct.score DESC
+  `, [competition_id]) as any[];
+
+  res.json({ competition, leaderboard });
 };

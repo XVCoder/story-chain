@@ -41,7 +41,8 @@ export function queryOne(sql: string, params: any[] = []): any | null {
 }
 
 export function execute(sql: string, params: any[] = []): void {
-  db.run(sql, params);
+  const safeParams = params.map(p => p === undefined ? null : p);
+  db.run(sql, safeParams);
 }
 
 export const initDatabase = async (): Promise<void> => {
@@ -74,13 +75,15 @@ export const initDatabase = async (): Promise<void> => {
       summary TEXT NOT NULL,
       content TEXT NOT NULL,
       author_id INTEGER NOT NULL,
-      mode TEXT DEFAULT 'free',
+      mode TEXT DEFAULT 'free' CHECK(mode IN ('free', 'selected', 'solo', 'team')),
       max_nodes INTEGER DEFAULT 5,
       current_nodes INTEGER DEFAULT 1,
       status TEXT DEFAULT 'draft',
       likes INTEGER DEFAULT 0,
       favorites INTEGER DEFAULT 0,
       views INTEGER DEFAULT 0,
+      team_id INTEGER,
+      competition_id INTEGER,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       published_at TIMESTAMP
     )

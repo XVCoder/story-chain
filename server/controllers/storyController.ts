@@ -3,20 +3,42 @@ import { queryAll, queryOne, execute } from '../db/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 export const createStory = (req: AuthRequest, res: Response) => {
-  const { title, summary, content, mode, max_nodes } = req.body;
+  const { title, summary, content, mode, max_nodes, team_id, competition_id } = req.body;
   const author_id = req.user?.id;
 
+  const resolvedMode = mode || 'free';
+  let resolvedMaxNodes = max_nodes || 5;
+  let resolvedTeamId: number | null = null;
+  let resolvedCompetitionId: number | null = null;
+
+  if (resolvedMode === 'solo') {
+    resolvedMaxNodes = 1;
+  }
+
+  if (resolvedMode === 'team') {
+    if (!team_id) {
+      return res.status(400).json({ message: 'Team mode requires a team_id' });
+    }
+    const member = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [team_id, author_id, 'leader']);
+    if (!member) {
+      return res.status(403).json({ message: 'Only team leader can create team stories' });
+    }
+    resolvedTeamId = team_id;
+    resolvedCompetitionId = competition_id || null;
+  }
+
   try {
-    execute('INSERT INTO stories (title, summary, content, author_id, mode, max_nodes) VALUES (?, ?, ?, ?, ?, ?)',
-      [title, summary, content, author_id, mode || 'free', max_nodes || 5]);
+    execute('INSERT INTO stories (title, summary, content, author_id, mode, max_nodes, team_id, competition_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [title, summary, content, author_id, resolvedMode, resolvedMaxNodes, resolvedTeamId, resolvedCompetitionId]);
     const story = queryOne('SELECT id FROM stories WHERE title = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [title, author_id]);
     if (!story) throw new Error('Story not created');
 
     execute('INSERT INTO story_nodes (story_id, content, author_id) VALUES (?, ?, ?)', [story.id, content, author_id]);
 
     res.status(201).json({ id: story.id });
-  } catch (error) {
-    return res.status(400).json({ message: 'Error creating story' });
+  } catch (error: any) {
+    const errMsg = error?.message || error?.toString() || 'Unknown error';
+    return res.status(400).json({ message: `Error creating story: ${errMsg}` });
   }
 };
 
@@ -70,8 +92,12 @@ export const getStoryById = (req: Request, res: Response) => {
 
 export const updateStory = (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const { title, summary, status } = req.body;
+  const { title, summary, status, mode } = req.body;
   const author_id = req.user?.id;
+
+  if (mode) {
+    return res.status(400).json({ message: 'Story mode cannot be changed after creation' });
+  }
 
   const story = queryOne('SELECT * FROM stories WHERE id = ? AND author_id = ?', [id, author_id]);
 

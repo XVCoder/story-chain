@@ -6,7 +6,7 @@ export const addNode = (req: AuthRequest, res: Response) => {
   const { story_id, parent_id, content } = req.body;
   const author_id = req.user?.id;
 
-  const story = queryOne('SELECT status, current_nodes, max_nodes FROM stories WHERE id = ?', [story_id]);
+  const story = queryOne('SELECT status, current_nodes, max_nodes, mode, team_id FROM stories WHERE id = ?', [story_id]);
   
   if (!story) {
     return res.status(404).json({ message: 'Story not found' });
@@ -16,7 +16,19 @@ export const addNode = (req: AuthRequest, res: Response) => {
     return res.status(400).json({ message: 'Story is not accepting new nodes' });
   }
 
-  if (story.current_nodes >= story.max_nodes) {
+  if (story.mode === 'solo') {
+    return res.status(400).json({ message: 'Solo mode does not accept new nodes' });
+  }
+
+  if (story.mode === 'team') {
+    const member = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ?', [story.team_id, author_id]);
+    if (!member) {
+      return res.status(403).json({ message: 'Only team members can add nodes to team stories' });
+    }
+  }
+
+  const hasMaxNodes = story.max_nodes !== 0;
+  if (hasMaxNodes && story.current_nodes >= story.max_nodes) {
     return res.status(400).json({ message: 'Story has reached maximum nodes' });
   }
 
@@ -48,31 +60,52 @@ export const selectNode = (req: AuthRequest, res: Response) => {
     return res.status(404).json({ message: 'Node not found' });
   }
 
-  const story = queryOne('SELECT author_id, current_nodes, max_nodes FROM stories WHERE id = ?', [node.story_id]);
+  const story = queryOne('SELECT author_id, current_nodes, max_nodes, mode, team_id FROM stories WHERE id = ?', [node.story_id]);
   
   if (!story) {
     return res.status(404).json({ message: 'Story not found' });
   }
 
-  if (story.author_id !== user_id) {
+  if (story.mode === 'solo') {
+    return res.status(400).json({ message: 'Solo mode does not require node selection' });
+  }
+
+  if (story.mode === 'team') {
+    const leader = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [story.team_id, user_id, 'leader']);
+    if (!leader) {
+      return res.status(403).json({ message: 'Only team leader can select nodes' });
+    }
+  } else if (story.author_id !== user_id) {
     return res.status(403).json({ message: 'Only story author can select nodes' });
   }
 
   execute('UPDATE story_nodes SET is_selected = FALSE WHERE story_id = ?', [node.story_id]);
   execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [node_id]);
 
-  const newStatus = story.current_nodes >= story.max_nodes ? 'completed' : 'ongoing';
+  const hasMaxNodes = story.max_nodes !== 0;
+  const newStatus = hasMaxNodes && story.current_nodes >= story.max_nodes ? 'completed' : 'ongoing';
   execute('UPDATE stories SET status = ? WHERE id = ?', [newStatus, node.story_id]);
 
-  calculatePoints(node.story_id);
+  calculatePoints(node.story_id, story.mode, story.team_id);
   res.json({ message: 'Node selected successfully' });
 };
 
-const calculatePoints = (story_id: number) => {
+const calculatePoints = (story_id: number, mode: string, team_id: number | null) => {
   const story = queryOne('SELECT views, author_id FROM stories WHERE id = ?', [story_id]);
   if (!story) return;
 
-  const authorPoints = Math.floor(story.views / 10);
+  if (mode === 'solo') {
+    const soloPoints = Math.floor(story.views / 5);
+    execute('UPDATE users SET points = points + ? WHERE id = ?', [soloPoints, story.author_id]);
+    return;
+  }
+
+  let multiplier = 1;
+  if (mode === 'selected') {
+    multiplier = 1.5;
+  }
+
+  const authorPoints = Math.floor((story.views / 10) * multiplier);
   execute('UPDATE users SET points = points + ? WHERE id = ?', [authorPoints, story.author_id]);
 
   const nodes = queryAll('SELECT author_id, coins FROM story_nodes WHERE story_id = ? AND is_selected = TRUE', [story_id]) as any[];
@@ -81,7 +114,15 @@ const calculatePoints = (story_id: number) => {
 
   const totalCoins = nodes.reduce((sum: number, node: any) => sum + (node.coins || 0), 0);
   nodes.forEach((node: any) => {
-    const nodePoints = totalCoins > 0 ? Math.floor((node.coins / totalCoins) * 100) : 0;
+    const nodePoints = totalCoins > 0 ? Math.floor((node.coins / totalCoins) * 100 * multiplier) : 0;
     execute('UPDATE users SET points = points + ? WHERE id = ?', [nodePoints, node.author_id]);
   });
+
+  if (mode === 'team' && team_id) {
+    const nodePoints = nodes.reduce((sum: number, node: any) => sum + Math.floor((node.coins || 0) / (totalCoins || 1) * 100), 0);
+    const competitionTeam = queryOne('SELECT id FROM competition_teams WHERE team_id = ?', [team_id]);
+    if (competitionTeam) {
+      execute('UPDATE competition_teams SET score = score + ? WHERE team_id = ?', [nodePoints, team_id]);
+    }
+  }
 };
