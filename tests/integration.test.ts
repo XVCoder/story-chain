@@ -351,7 +351,12 @@ describe('Boundary & Edge Cases', () => {
   });
 
   describe('Business Logic Edge Cases', () => {
-    it('should reject adding node when story is not ongoing', async () => {
+    it('should reject adding node when story is completed', async () => {
+      await request(app)
+        .put(`/api/stories/${storyId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: `Boundary Story ${suffix}`, summary: 'Test', status: 'completed' });
+
       const response = await request(app)
         .post('/api/nodes')
         .set('Authorization', `Bearer ${token}`)
@@ -361,11 +366,6 @@ describe('Boundary & Edge Cases', () => {
     });
 
     it('should reject non-member from adding to team story', async () => {
-      await request(app)
-        .put(`/api/stories/${storyId}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send({ title: `Boundary Story ${suffix}`, summary: 'Test', status: 'draft' });
-
       const teamRes = await request(app)
         .post('/api/teams')
         .set('Authorization', `Bearer ${token}`)

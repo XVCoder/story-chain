@@ -28,8 +28,8 @@ export const createStory = (req: AuthRequest, res: Response) => {
   }
 
   try {
-    execute('INSERT INTO stories (title, summary, content, author_id, mode, max_nodes, team_id, competition_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [title, summary, content, author_id, resolvedMode, resolvedMaxNodes, resolvedTeamId, resolvedCompetitionId]);
+    execute('INSERT INTO stories (title, summary, content, author_id, mode, max_nodes, team_id, competition_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [title, summary, content, author_id, resolvedMode, resolvedMaxNodes, resolvedTeamId, resolvedCompetitionId, 'ongoing']);
     const story = queryOne('SELECT id FROM stories WHERE title = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [title, author_id]);
     if (!story) throw new Error('Story not created');
 
