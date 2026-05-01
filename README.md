@@ -15,22 +15,18 @@
 ### 核心玩法
 
 - 📝 **故事创作**: 发起人拟定故事概要和开头
-- 🔗 **故事接龙**: 参与者可添加接龙节点
+- 🔗 **故事接龙**: 参与者可在任意节点后添加接龙分支
+- 🌲 **树形分支**: 每个节点支持多人在此基础上接龙，形成故事树
 - 🪙 **投币系统**: 读者通过投币选出最佳节点版本
-- 🏆 **节点选择**: 发起人在达到最大节点数后决定是否发布
-
-### 游戏模式
-
-- **自由模式 (Free)**: 无限制接龙创作，支持 `max_nodes=0` 无限节点
-- **精选模式 (Selected)**: 管理员精选推荐，积分 1.5x 加成
-- **Solo模式 (Solo)**: 单人独立创作，`max_nodes` 固定为 1，不可接龙
-- **组队竞赛 (Team)**: 团队协作竞赛，仅团队成员可参与，积分计入排行榜
+- 📖 **主线拼接**: 自动按投币数(多→少)和提交时间(早→晚)选出最佳内容，拼接为完整主线故事
+- 🔄 **动态刷新**: 每次添加内容或投币变化时，主线自动重新计算并实时展示
+- 🏆 **节点选择**: 发起人可在达到最大节点数后发布故事
 
 ### 互动功能
 
 - ❤️ **点赞**: 支持对故事点赞
 - ⭐ **收藏**: 支持收藏故事
-- 🪙 **投币**: 支持对故事节点投币支持
+- 🪙 **投币**: 支持对故事节点投币支持（**每人每天每节点最多5币**）
 - 👁️ **阅读量统计**: 自动记录故事阅读量
 
 ### 积分与道具系统
@@ -38,6 +34,7 @@
 - 基于阅读量和投币占比计算积分
 - 积分可兑换道具（AI润色、提示、跳过等）
 - AI润色功能：对选中节点进行AI优化
+- 📅 **每日签到**: 签到获得10个硬币
 
 ### 组队与竞赛
 
@@ -150,19 +147,22 @@ story-chain/
 | <br /> | POST `/api/users/login`                             | 用户登录               |
 | <br /> | GET `/api/users/profile`                            | 获取用户资料             |
 | <br /> | PUT `/api/users/profile`                            | 更新用户资料             |
+| <br /> | POST `/api/users/check-in`                          | 每日签到（+10币）         |
 | **故事** | GET `/api/stories`                                  | 获取故事列表（支持分页/筛选/排序） |
 | <br /> | GET `/api/stories/search`                           | 搜索故事（按标题/摘要）       |
 | <br /> | GET `/api/stories/my`                               | 获取我的故事列表           |
 | <br /> | GET `/api/stories/:id`                              | 获取故事详情             |
+| <br /> | GET `/api/stories/:story_id/timeline`               | 获取主线故事拼接结果         |
 | <br /> | POST `/api/stories`                                 | 创建故事               |
 | <br /> | PUT `/api/stories/:id`                              | 更新故事               |
 | <br /> | DELETE `/api/stories/:id`                           | 删除故事               |
 | **节点** | GET `/api/nodes/:story_id`                          | 获取故事节点             |
 | <br /> | POST `/api/nodes`                                   | 添加接龙节点             |
 | <br /> | PUT `/api/nodes/:node_id/select`                    | 选择节点               |
+| <br /> | POST `/api/nodes/:story_id/auto-select`             | 自动计算主线             |
 | **互动** | POST `/api/stories/:story_id/like`                  | 点赞/取消点赞            |
 | <br /> | POST `/api/stories/:story_id/favorite`              | 收藏/取消收藏            |
-| <br /> | POST `/api/nodes/:node_id/coin`                     | 投币支持节点             |
+| <br /> | POST `/api/nodes/:node_id/coin`                     | 投币支持节点（含每日上限校验）   |
 | <br /> | GET `/api/favorites`                                | 获取收藏列表             |
 | **道具** | POST `/api/inventory/exchange`                      | 积分兑换道具             |
 | <br /> | GET `/api/inventory`                                | 获取背包               |
@@ -219,16 +219,16 @@ npx jest
 
 | 测试文件                      | 覆盖范围                      | 测试数 |
 | ------------------------- | ------------------------- | --- |
-| tests/integration.test.ts | 全链路流程 + 边界情况 + 未测试端点覆盖    | 38  |
+| tests/integration.test.ts | 全链路流程 + 边界情况 + 未测试端点覆盖 + 每日投币上限 + 每日签到 | 50  |
 | tests/user.test.ts        | 用户注册/登录/资料获取              | 5   |
 | tests/story.test.ts       | 故事CRUD/节点添加/点赞/收藏         | 6   |
-| tests/interaction.test.ts | 投币/点赞/收藏/收藏列表             | 8   |
+| tests/interaction.test.ts | 投币/点赞/收藏/收藏列表/金额校验       | 9   |
 | tests/node.test.ts        | 节点添加/获取/选择/最大节点限制/权限      | 8   |
 | tests/inventory.test.ts   | 积分兑换/背包/道具使用/权限           | 5   |
 | tests/mode.test.ts        | 游戏模式差异化逻辑（Solo/自由/团队/排行榜） | 12  |
 | tests/team.test.ts        | 团队创建/加入/查询/竞赛创建/加入        | 13  |
 
-**总计：95 个测试，8 个测试套件，全部通过**
+**总计：108 个测试，8 个测试套件，全部通过**
 
 ## 前端页面路由
 
@@ -245,6 +245,45 @@ npx jest
 ## 登录流程
 
 未登录用户访问任何功能页面时，会自动跳转到 `/login` 登录页面。登录页面同时支持登录和注册功能，登录成功后自动跳转到 `/home`。
+
+## 新需求实现要点
+
+### 1. 主线自动拼接与动态刷新
+
+**需求**: 接龙页面顶部区域展示当前接龙的结果。
+
+**实现**:
+- `autoSelectMainLineInternal(story_id)`: 从根节点开始，逐层选出最优子节点（按投币数 DESC，提交时间 ASC），标记为 `is_selected = TRUE`
+- `getTimeline`: 纯查询接口，返回所有选中节点的内容和拼接后的 `full_text`
+- 动态触发时机：
+  - `addNode` 创建新节点后 → 自动调用 `autoSelectMainLineInternal`
+  - `coinNode` 投币后 → 自动调用 `autoSelectMainLineInternal`
+  - 前端在 `handleAddNode`、`handleSelectNode`、`handleCoin` 后调用 `fetchTimeline()` 刷新
+- 前端 StoryDetail.vue 顶部 `timeline-card` 展示完整拼接结果
+
+### 2. 每日投币上限
+
+**需求**: 每个人每天给同一个接龙节点最多投出5个硬币。
+
+**实现**:
+- 数据库新增 `daily_coins` 表: `(user_id, node_id, coin_date, daily_amount)`, UNIQUE(user_id, node_id, coin_date)
+- `coinNode` 校验流程:
+  1. 验证 amount 为正整数且 ≤ 5
+  2. 查询今日该用户对该节点的已投币数
+  3. 若 `daily_amount + amount > 5`，返回 400 "Daily coin limit reached for this node (max 5)"
+  4. 否则记录到 `daily_coins` 并完成投币
+- 每个节点的每日上限独立计算，不同用户互不影响
+
+### 3. 每日签到
+
+**需求**: 每天签到可以获得10个硬币。
+
+**实现**:
+- 数据库新增 `check_ins` 表: `(user_id, check_date, points_awarded)`, UNIQUE(user_id, check_date)
+- `POST /api/users/check-in`:
+  1. 检查今日是否已签到 → 返回 "Already checked in today"
+  2. 插入签到记录 + 10积分
+- 前端: Header 下拉菜单中的「📅 签到」按钮
 
 ## License
 
