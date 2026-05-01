@@ -39,7 +39,7 @@ describe('Node API', () => {
     const storyResponse = await request(app)
       .post('/api/stories')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Node Select Story', summary: 'Test for node selection', content: 'Beginning...', mode: 'free', max_nodes: 3 });
+      .send({ title: 'Node Select Story', summary: 'Test for node selection', content: 'Beginning...', mode: 'free', max_nodes: 2 });
     storyId = storyResponse.body.id;
 
     await request(app)
@@ -59,7 +59,7 @@ describe('Node API', () => {
     const response2 = await request(app)
       .post('/api/nodes')
       .set('Authorization', `Bearer ${otherToken}`)
-      .send({ story_id: storyId, content: 'Second branch...' });
+      .send({ story_id: storyId, parent_id: nodeId, content: 'Second branch...' });
     expect(response2.status).toBe(201);
   });
 
