@@ -254,7 +254,7 @@ npx jest
 
 **实现**:
 - `autoSelectMainLineInternal(story_id)`: 从根节点开始，逐层选出最优子节点（按投币数 DESC，提交时间 ASC），标记为 `is_selected = TRUE`
-- `getTimeline`: 纯查询接口，返回所有选中节点的内容和拼接后的 `full_text`
+- `getTimeline`: 纯查询接口，返回所有选中节点的内容和拼接后的 `full_text`（节点内容直接连接，无换行无标点）
 - 动态触发时机：
   - `addNode` 创建新节点后 → 自动调用 `autoSelectMainLineInternal`
   - `coinNode` 投币后 → 自动调用 `autoSelectMainLineInternal`

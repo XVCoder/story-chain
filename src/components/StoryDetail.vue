@@ -173,14 +173,14 @@ const handleCoin = async (nodeId: number) => {
   }
 };
 const handlePublish = async () => {
- try {
- await storyAPI.update(Number(props.id), { status: 'published' });
- ElMessage.success('发布成功');
- await fetchStory();
- }
- catch (error) {
- ElMessage.error('操作失败');
- }
+  try {
+    await storyAPI.update(Number(props.id), { status: 'published' });
+    ElMessage.success('发布成功');
+    await fetchStory();
+  } catch (error: any) {
+    const msg = error?.response?.data?.message || '操作失败';
+    ElMessage.warning(msg);
+  }
 };
 const handleAIPolish = async () => {
  const aiItem = store.inventory.find(item => item.item_type === 'ai_polish');
