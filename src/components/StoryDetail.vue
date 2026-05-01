@@ -13,6 +13,7 @@ const story = ref<Story | null>(null);
 const loading = ref(true);
 const showAddNode = ref(false);
 const nodeContent = ref('');
+const parentIdForAdd = ref<number | undefined>(undefined);
 const showAIPolish = ref(false);
 const showHint = ref(false);
 const showSkip = ref(false);
@@ -127,24 +128,31 @@ const handleFavorite = async () => {
  }
 };
 const handleAddNode = async () => {
- if (!nodeContent.value.trim()) {
- ElMessage.warning('请输入内容');
- return;
- }
- try {
- await nodeAPI.add({
- story_id: Number(props.id),
- content: nodeContent.value,
- });
- ElMessage.success('接龙成功');
- showAddNode.value = false;
- nodeContent.value = '';
- await fetchStory();
- await fetchTimeline();
- }
- catch (error) {
- ElMessage.error('操作失败');
- }
+  if (!nodeContent.value.trim()) {
+    ElMessage.warning('请输入内容');
+    return;
+  }
+  try {
+    await nodeAPI.add({
+      story_id: Number(props.id),
+      parent_id: parentIdForAdd.value,
+      content: nodeContent.value,
+    });
+    ElMessage.success('接龙成功');
+    showAddNode.value = false;
+    nodeContent.value = '';
+    parentIdForAdd.value = undefined;
+    await fetchStory();
+    await fetchTimeline();
+  } catch {
+    ElMessage.error('操作失败');
+  }
+};
+
+const handleReplyTo = (nodeId: number) => {
+  parentIdForAdd.value = nodeId;
+  nodeContent.value = '';
+  showAddNode.value = true;
 };
 const handleSelectNode = async (nodeId: number) => {
  try {
@@ -262,8 +270,8 @@ onMounted(() => {
           <ElButton @click="handleFavorite" type="text">
             ⭐ {{ story.favorites }}
           </ElButton>
-          <ElButton @click="showAddNode = true" type="primary" v-if="canAddNode">
-            添加接龙
+          <ElButton @click="handleReplyTo(undefined)" type="primary" v-if="canAddNode">
+              添加接龙
           </ElButton>
           <ElButton @click="handlePublish" type="success" v-if="isAuthor && story.status !== 'published'">
             发布故事
@@ -299,6 +307,7 @@ onMounted(() => {
               <p class="node-content">{{ node.content }}</p>
               <div class="node-actions">
                 <ElButton size="small" @click="handleCoin(node.id)">投币</ElButton>
+                <ElButton size="small" type="primary" plain @click="handleReplyTo(node.id)" v-if="canAddNode">在此接龙</ElButton>
                 <ElButton size="small" type="primary" v-if="isAuthor && !node.is_selected" @click="handleSelectNode(node.id)">选为下一节点</ElButton>
               </div>
             </div>
@@ -314,6 +323,7 @@ onMounted(() => {
                   <p class="node-content">{{ child.content }}</p>
                   <div class="node-actions">
                     <ElButton size="small" @click="handleCoin(child.id)">投币</ElButton>
+                    <ElButton size="small" type="primary" plain @click="handleReplyTo(child.id)" v-if="canAddNode">在此接龙</ElButton>
                     <ElButton size="small" type="primary" v-if="isAuthor && !child.is_selected" @click="handleSelectNode(child.id)">选为下一节点</ElButton>
                   </div>
                 </div>
@@ -323,7 +333,11 @@ onMounted(() => {
         </div>
       </div>
 
-      <ElDialog v-model="showAddNode" title="添加接龙" @close="nodeContent = ''">
+      <ElDialog v-model="showAddNode" :title="parentIdForAdd ? '接龙续写' : '添加接龙'" @close="nodeContent = ''; parentIdForAdd = undefined">
+        <div v-if="parentIdForAdd && story?.nodes" class="reply-context">
+          <span class="reply-label">正在回复：</span>
+          <p class="reply-text">{{ story?.nodes?.find(n => n.id === parentIdForAdd)?.content?.slice(0, 80) }}...</p>
+        </div>
         <ElInput 
           v-model="nodeContent" 
           type="textarea" 
@@ -528,5 +542,27 @@ onMounted(() => {
   font-size: 15px;
   white-space: pre-wrap;
   padding: 4px 0;
+}
+
+.reply-context {
+  background: #f5f7fa;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-left: 3px solid #409eff;
+}
+
+.reply-label {
+  font-size: 12px;
+  color: #909399;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.reply-text {
+  margin: 0;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.6;
 }
 </style>
