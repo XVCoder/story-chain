@@ -35,13 +35,25 @@ const handleRegister = async () => {
     ElMessage.warning('请输入用户名和密码');
     return;
   }
+  if (registerForm.value.username.length < 3) {
+    ElMessage.warning('用户名至少3个字符');
+    return;
+  }
+  if (registerForm.value.password.length < 6) {
+    ElMessage.warning('密码至少6个字符');
+    return;
+  }
   loading.value = true;
   try {
     await authAPI.register(registerForm.value);
-    ElMessage.success('注册成功，请登录');
-    loginForm.value.username = registerForm.value.username;
-    loginForm.value.password = registerForm.value.password;
-    activeTab.value = 'login';
+    const loginRes = await authAPI.login({
+      username: registerForm.value.username,
+      password: registerForm.value.password,
+    });
+    localStorage.setItem('token', loginRes.data.token);
+    setUser(loginRes.data.user);
+    ElMessage.success('注册成功');
+    router.push('/home');
   } catch {
     ElMessage.error('注册失败，用户名或邮箱已存在');
   } finally {

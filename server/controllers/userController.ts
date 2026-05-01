@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { queryOne } from '../db/database.js';
+import { queryOne, queryAll } from '../db/database.js';
 import { execute } from '../db/database.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -12,6 +12,14 @@ export const register = (req: Request, res: Response) => {
   
   if (!username || !password) {
     return res.status(400).json({ message: 'Username and password are required' });
+  }
+
+  if (username.length < 3) {
+    return res.status(400).json({ message: 'Username must be at least 3 characters' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters' });
   }
 
   try {
@@ -82,4 +90,20 @@ export const checkIn = (req: AuthRequest, res: Response) => {
   execute('UPDATE users SET points = points + ? WHERE id = ?', [pointsAwarded, userId]);
 
   res.json({ message: 'Check-in successful', points_awarded: pointsAwarded });
+};
+
+export const getUserStats = (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+
+  const createdStories = queryAll('SELECT COUNT(*) as count FROM stories WHERE author_id = ?', [userId]) as any[];
+  const participatedStories = queryAll(`
+    SELECT COUNT(DISTINCT story_id) as count FROM story_nodes WHERE author_id = ? AND story_id NOT IN (SELECT id FROM stories WHERE author_id = ?)
+  `, [userId, userId]) as any[];
+  const receivedCoins = queryAll('SELECT COALESCE(SUM(coins), 0) as total FROM story_nodes WHERE author_id = ?', [userId]) as any[];
+
+  res.json({
+    created_stories: createdStories[0]?.count || 0,
+    participated_stories: participatedStories[0]?.count || 0,
+    received_coins: receivedCoins[0]?.total || 0,
+  });
 };

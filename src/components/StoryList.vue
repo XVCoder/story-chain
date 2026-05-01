@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElTabs, ElTabPane, ElSelect, ElOption, ElMessage, ElInput, ElButton } from 'element-plus';
+import { ElTabs, ElTabPane, ElSelect, ElOption, ElMessage, ElInput, ElButton, ElForm, ElFormItem } from 'element-plus';
 import { ElDialog } from 'element-plus';
 import type { Story } from '../types';
 import StoryCard from './StoryCard.vue';
@@ -189,27 +189,28 @@ onMounted(() => {
     </div>
 
     <ElDialog v-model="showCreateDialog" title="创建故事" width="600px" @close="showCreateDialog = false">
-      <el-form :model="createForm" label-width="100px">
-        <el-form-item label="故事标题">
-          <el-input v-model="createForm.title" placeholder="请输入故事标题" />
-        </el-form-item>
-        <el-form-item label="故事概要">
-          <el-input v-model="createForm.summary" type="textarea" :rows="2" placeholder="请输入故事概要" />
-        </el-form-item>
-        <el-form-item label="开头内容">
-          <el-input v-model="createForm.content" type="textarea" :rows="4" placeholder="请输入故事开头" />
-        </el-form-item>
-        <el-form-item label="游戏模式">
-          <el-select v-model="createForm.mode">
-            <el-option v-for="m in modes" :key="m.value" :label="m.label" :value="m.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="最大节点数">
-          <el-select v-model="createForm.max_nodes">
-            <el-option v-for="n in [3, 5, 7, 10]" :key="n" :label="String(n)" :value="n" />
-          </el-select>
-        </el-form-item>
-      </el-form>
+      <ElForm :model="createForm" label-width="100px">
+        <ElFormItem label="故事标题">
+          <ElInput v-model="createForm.title" placeholder="请输入故事标题" />
+        </ElFormItem>
+        <ElFormItem label="故事概要">
+          <ElInput v-model="createForm.summary" type="textarea" :rows="2" placeholder="请输入故事概要" />
+        </ElFormItem>
+        <ElFormItem label="开头内容">
+          <ElInput v-model="createForm.content" type="textarea" :rows="4" placeholder="请输入故事开头" />
+        </ElFormItem>
+        <ElFormItem label="游戏模式">
+          <ElSelect v-model="createForm.mode">
+            <ElOption v-for="m in modes" :key="m.value" :label="m.label" :value="m.value" />
+          </ElSelect>
+        </ElFormItem>
+        <ElFormItem label="最大节点数">
+          <ElSelect v-model="createForm.max_nodes">
+            <ElOption label="无限制" :value="0" />
+            <ElOption v-for="n in [3, 5, 7, 10]" :key="n" :label="String(n)" :value="n" />
+          </ElSelect>
+        </ElFormItem>
+      </ElForm>
       <template #footer>
         <ElButton @click="showCreateDialog = false">取消</ElButton>
         <ElButton type="primary" :loading="creating" @click="handleCreateStory">创建</ElButton>

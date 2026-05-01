@@ -115,6 +115,7 @@ export const leaveTeam = (req: AuthRequest, res: Response) => {
   if (member.role === 'leader') {
     const otherMembers = queryOne('SELECT id FROM team_members WHERE team_id = ? AND role = ?', [team_id, 'member']);
     if (!otherMembers) {
+      execute('DELETE FROM competition_teams WHERE team_id = ?', [team_id]);
       execute('DELETE FROM team_members WHERE team_id = ?', [team_id]);
       execute('DELETE FROM teams WHERE id = ?', [team_id]);
       return res.json({ message: 'Team disbanded' });

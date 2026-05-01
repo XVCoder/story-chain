@@ -62,4 +62,41 @@ describe('User API', () => {
     expect(response.status).toBe(200);
     expect(response.body.username).toBe(uniqueName);
   });
+
+  it('should get user stats', async () => {
+    const response = await request(app)
+      .get('/api/users/stats')
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('created_stories');
+    expect(response.body).toHaveProperty('participated_stories');
+    expect(response.body).toHaveProperty('received_coins');
+  });
+
+  it('should check in successfully', async () => {
+    const response = await request(app)
+      .post('/api/users/check-in')
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(response.status).toBe(200);
+    expect(response.body.points_awarded).toBe(10);
+  });
+
+  it('should reject duplicate check-in on same day', async () => {
+    const response = await request(app)
+      .post('/api/users/check-in')
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('Already checked in today');
+  });
+
+  it('should reject registration with short password', async () => {
+    const response = await request(app)
+      .post('/api/users/register')
+      .send({ username: `shortpass_${Date.now()}`, password: '123' });
+    
+    expect(response.status).toBe(400);
+  });
 });

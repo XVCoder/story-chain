@@ -5,9 +5,10 @@ import { ElDialog } from 'element-plus';
 import { store } from '../store';
 import { inventoryAPI, authAPI } from '../api';
 const router = useRouter();
-const goBack = () => router.push('/');
+const goBack = () => router.push('/home');
 const showExchange = ref(false);
 const loading = ref(true);
+const userStats = ref({ created_stories: 0, participated_stories: 0, received_coins: 0 });
 const exchangeForm = ref({
  item_type: 'ai_polish',
  quantity: 1,
@@ -84,15 +85,15 @@ onMounted(async () => {
       
       <div class="profile-stats">
         <div class="stat-item">
-          <span class="stat-value">0</span>
+          <span class="stat-value">{{ userStats.created_stories }}</span>
           <span class="stat-label">创建故事</span>
         </div>
         <div class="stat-item">
-          <span class="stat-value">0</span>
+          <span class="stat-value">{{ userStats.participated_stories }}</span>
           <span class="stat-label">参与接龙</span>
         </div>
         <div class="stat-item">
-          <span class="stat-value">0</span>
+          <span class="stat-value">{{ userStats.received_coins }}</span>
           <span class="stat-label">获得投币</span>
         </div>
       </div>

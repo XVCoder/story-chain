@@ -148,6 +148,7 @@ story-chain/
 | <br /> | GET `/api/users/profile`                            | 获取用户资料             |
 | <br /> | PUT `/api/users/profile`                            | 更新用户资料             |
 | <br /> | POST `/api/users/check-in`                          | 每日签到（+10币）         |
+| <br /> | GET `/api/users/stats`                             | 获取用户统计数据            |
 | **故事** | GET `/api/stories`                                  | 获取故事列表（支持分页/筛选/排序） |
 | <br /> | GET `/api/stories/search`                           | 搜索故事（按标题/摘要）       |
 | <br /> | GET `/api/stories/my`                               | 获取我的故事列表           |
@@ -220,7 +221,7 @@ npx jest
 | 测试文件                      | 覆盖范围                      | 测试数 |
 | ------------------------- | ------------------------- | --- |
 | tests/integration.test.ts | 全链路流程 + 边界情况 + 未测试端点覆盖 + 每日投币上限 + 每日签到 | 50  |
-| tests/user.test.ts        | 用户注册/登录/资料获取              | 5   |
+| tests/user.test.ts        | 用户注册/登录/资料/签到/统计/密码校验            | 10  |
 | tests/story.test.ts       | 故事CRUD/节点添加/点赞/收藏         | 6   |
 | tests/interaction.test.ts | 投币/点赞/收藏/收藏列表/金额校验       | 9   |
 | tests/node.test.ts        | 节点添加/获取/选择/最大节点限制/权限      | 8   |
@@ -228,7 +229,7 @@ npx jest
 | tests/mode.test.ts        | 游戏模式差异化逻辑（Solo/自由/团队/排行榜） | 12  |
 | tests/team.test.ts        | 团队创建/加入/查询/竞赛创建/加入        | 13  |
 
-**总计：108 个测试，8 个测试套件，全部通过**
+**总计：113 个测试，8 个测试套件，全部通过**
 
 ## 前端页面路由
 

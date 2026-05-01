@@ -6,6 +6,16 @@ export const createStory = (req: AuthRequest, res: Response) => {
   const { title, summary, content, mode, max_nodes, team_id, competition_id } = req.body;
   const author_id = req.user?.id;
 
+  if (!title || typeof title !== 'string' || !title.trim()) {
+    return res.status(400).json({ message: 'Title is required' });
+  }
+  if (!summary || typeof summary !== 'string' || !summary.trim()) {
+    return res.status(400).json({ message: 'Summary is required' });
+  }
+  if (!content || typeof content !== 'string' || !content.trim()) {
+    return res.status(400).json({ message: 'Content is required' });
+  }
+
   const resolvedMode = mode || 'free';
   let resolvedMaxNodes = max_nodes !== undefined ? max_nodes : 5;
   let resolvedTeamId: number | null = null;
@@ -124,6 +134,9 @@ export const updateStory = (req: AuthRequest, res: Response) => {
         updates.push('published_at = ?');
         params.push(new Date().toISOString());
       }
+    } else {
+      updates.push('published_at = ?');
+      params.push(story.published_at || null);
     }
 
     if (updates.length === 0) {

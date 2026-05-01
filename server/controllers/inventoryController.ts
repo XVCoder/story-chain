@@ -69,7 +69,7 @@ export const useItem = (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'story_id is required for ai_polish' });
     }
 
-    const node = queryOne('SELECT content FROM story_nodes WHERE story_id = ? AND is_selected = TRUE ORDER BY created_at DESC LIMIT 1', [story_id]);
+    const node = queryOne('SELECT id, content FROM story_nodes WHERE story_id = ? AND is_selected = TRUE ORDER BY created_at DESC LIMIT 1', [story_id]);
     
     if (!node) {
       return res.status(404).json({ message: 'No selected node found' });
@@ -78,7 +78,7 @@ export const useItem = (req: AuthRequest, res: Response) => {
     execute('UPDATE inventory SET quantity = quantity - 1 WHERE user_id = ? AND item_type = ?', [user_id, item_type]);
 
     const polishedContent = node.content + '\n\n[AI润色完成]';
-    execute('UPDATE story_nodes SET content = ? WHERE story_id = ? AND is_selected = TRUE', [polishedContent, story_id]);
+    execute('UPDATE story_nodes SET content = ? WHERE id = ?', [polishedContent, node.id]);
 
     res.json({ message: 'AI润色已应用', polishedContent });
   } else {

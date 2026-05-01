@@ -54,7 +54,7 @@ onMounted(() => {
   <div class="my-stories">
     <div class="page-header">
       <h1>我的故事</h1>
-      <ElButton @click="router.push('/')">返回首页</ElButton>
+      <ElButton @click="router.push('/home')">返回首页</ElButton>
     </div>
 
     <div v-if="loading" class="loading">加载中...</div>
