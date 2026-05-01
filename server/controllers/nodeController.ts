@@ -6,6 +6,14 @@ export const addNode = (req: AuthRequest, res: Response) => {
   const { story_id, parent_id, content } = req.body;
   const author_id = req.user?.id;
 
+  if (!author_id) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  if (!content || typeof content !== 'string' || !content.trim()) {
+    return res.status(400).json({ message: 'Content is required' });
+  }
+
   const story = queryOne('SELECT status, current_nodes, max_nodes, mode, team_id FROM stories WHERE id = ?', [story_id]);
   
   if (!story) {
@@ -27,13 +35,20 @@ export const addNode = (req: AuthRequest, res: Response) => {
     }
   }
 
+  if (parent_id) {
+    const parent = queryOne('SELECT id FROM story_nodes WHERE id = ? AND story_id = ?', [parent_id, story_id]);
+    if (!parent) {
+      return res.status(400).json({ message: 'Parent node not found in this story' });
+    }
+  }
+
   const hasMaxNodes = story.max_nodes !== 0;
   if (hasMaxNodes && story.current_nodes >= story.max_nodes) {
     return res.status(400).json({ message: 'Story has reached maximum nodes' });
   }
 
   try {
-    execute('INSERT INTO story_nodes (story_id, parent_id, content, author_id) VALUES (?, ?, ?, ?)', [story_id, parent_id || null, content, author_id]);
+    execute('INSERT INTO story_nodes (story_id, parent_id, content, author_id) VALUES (?, ?, ?, ?)', [story_id, parent_id || null, content.trim(), author_id]);
     execute('UPDATE stories SET current_nodes = current_nodes + 1 WHERE id = ?', [story_id]);
     const node = queryOne('SELECT id FROM story_nodes WHERE story_id = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [story_id, author_id]);
     res.status(201).json({ id: node?.id });
@@ -122,7 +137,7 @@ export function autoSelectMainLineInternal(story_id: number): number {
       LIMIT 1
     `, [story_id, currentParentId]);
 
-    if (!bestChild || bestChild.coins <= 0) break;
+    if (!bestChild) break;
 
     execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [bestChild.id]);
     currentParentId = bestChild.id;
@@ -139,8 +154,6 @@ export const getTimeline = (req: Request, res: Response) => {
   if (!story) {
     return res.status(404).json({ message: 'Story not found' });
   }
-
-  autoSelectMainLineInternal(Number(story_id));
 
   const timelineNodes = queryAll(`
     SELECT id, content, author_id, coins, created_at

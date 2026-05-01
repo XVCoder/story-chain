@@ -42,6 +42,14 @@ export const coinNode = (req: AuthRequest, res: Response) => {
   const user_id = req.user?.id;
   const { amount = 1 } = req.body;
 
+  if (!Number.isInteger(amount) || amount <= 0) {
+    return res.status(400).json({ message: 'Amount must be a positive integer' });
+  }
+
+  if (amount > 5) {
+    return res.status(400).json({ message: 'Cannot coin more than 5 at once' });
+  }
+
   const node = queryOne('SELECT id, story_id FROM story_nodes WHERE id = ?', [node_id]);
 
   if (!node) {

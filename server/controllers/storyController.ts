@@ -7,7 +7,7 @@ export const createStory = (req: AuthRequest, res: Response) => {
   const author_id = req.user?.id;
 
   const resolvedMode = mode || 'free';
-  let resolvedMaxNodes = max_nodes || 5;
+  let resolvedMaxNodes = max_nodes !== undefined ? max_nodes : 5;
   let resolvedTeamId: number | null = null;
   let resolvedCompetitionId: number | null = null;
 
@@ -106,9 +106,32 @@ export const updateStory = (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const publishedAt = status === 'published' ? new Date().toISOString() : null;
-    execute('UPDATE stories SET title = ?, summary = ?, status = ?, published_at = ? WHERE id = ?',
-      [title, summary, status, publishedAt, id]);
+    const updates: string[] = [];
+    const params: any[] = [];
+
+    if (title !== undefined) {
+      updates.push('title = ?');
+      params.push(title);
+    }
+    if (summary !== undefined) {
+      updates.push('summary = ?');
+      params.push(summary);
+    }
+    if (status !== undefined) {
+      updates.push('status = ?');
+      params.push(status);
+      if (status === 'published') {
+        updates.push('published_at = ?');
+        params.push(new Date().toISOString());
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    params.push(id);
+    execute(`UPDATE stories SET ${updates.join(', ')} WHERE id = ?`, params);
     res.json({ message: 'Story updated successfully' });
   } catch (error) {
     return res.status(400).json({ message: 'Error updating story' });

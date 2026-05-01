@@ -6,6 +6,10 @@ export const exchangePoints = (req: AuthRequest, res: Response) => {
   const { item_type, quantity = 1 } = req.body;
   const user_id = req.user?.id;
 
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    return res.status(400).json({ message: 'Quantity must be a positive integer' });
+  }
+
   const itemPrices: Record<string, number> = {
     ai_polish: 100,
     hint: 50,
@@ -60,20 +64,25 @@ export const useItem = (req: AuthRequest, res: Response) => {
     return res.status(400).json({ message: 'Item not available' });
   }
 
-  execute('UPDATE inventory SET quantity = quantity - 1 WHERE user_id = ? AND item_type = ?', [user_id, item_type]);
-
   if (item_type === 'ai_polish') {
+    if (!story_id) {
+      return res.status(400).json({ message: 'story_id is required for ai_polish' });
+    }
+
     const node = queryOne('SELECT content FROM story_nodes WHERE story_id = ? AND is_selected = TRUE ORDER BY created_at DESC LIMIT 1', [story_id]);
     
     if (!node) {
       return res.status(404).json({ message: 'No selected node found' });
     }
 
+    execute('UPDATE inventory SET quantity = quantity - 1 WHERE user_id = ? AND item_type = ?', [user_id, item_type]);
+
     const polishedContent = node.content + '\n\n[AI润色完成]';
     execute('UPDATE story_nodes SET content = ? WHERE story_id = ? AND is_selected = TRUE', [polishedContent, story_id]);
 
     res.json({ message: 'AI润色已应用', polishedContent });
   } else {
+    execute('UPDATE inventory SET quantity = quantity - 1 WHERE user_id = ? AND item_type = ?', [user_id, item_type]);
     res.json({ message: 'Item used successfully' });
   }
 };

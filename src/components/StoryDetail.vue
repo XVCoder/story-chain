@@ -90,15 +90,6 @@ const fetchTimeline = async () => {
   }
 };
 
-const handleAutoSelect = async () => {
-  try {
-    await nodeAPI.autoSelect(Number(props.id));
-    ElMessage.success('主线已更新');
-    await fetchStory();
-  } catch {
-    ElMessage.error('主线更新失败');
-  }
-};
 const handleLike = async () => {
  if (!store.user) {
  ElMessage.warning('请先登录');

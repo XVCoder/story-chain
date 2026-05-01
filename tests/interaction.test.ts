@@ -79,13 +79,27 @@ describe('Interaction API', () => {
     });
 
     it('should fail with insufficient points', async () => {
+      execute('UPDATE users SET points = 0 WHERE id = ?', [otherUserId]);
+
       const response = await request(app)
         .post(`/api/nodes/${nodeId}/coin`)
         .set('Authorization', `Bearer ${otherToken}`)
-        .send({ amount: 999999 });
+        .send({ amount: 1 });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe('Insufficient points');
+
+      execute('UPDATE users SET points = 100 WHERE id = ?', [otherUserId]);
+    });
+
+    it('should fail with invalid amount', async () => {
+      const response = await request(app)
+        .post(`/api/nodes/${nodeId}/coin`)
+        .set('Authorization', `Bearer ${otherToken}`)
+        .send({ amount: -1 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Amount must be a positive integer');
     });
 
     it('should accumulate coins on repeated coins', async () => {

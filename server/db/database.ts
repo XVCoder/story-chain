@@ -78,7 +78,7 @@ export const initDatabase = async (): Promise<void> => {
       mode TEXT DEFAULT 'free' CHECK(mode IN ('free', 'selected', 'solo', 'team')),
       max_nodes INTEGER DEFAULT 5,
       current_nodes INTEGER DEFAULT 1,
-      status TEXT DEFAULT 'draft',
+      status TEXT DEFAULT 'draft' CHECK(status IN ('draft', 'ongoing', 'completed', 'published')),
       likes INTEGER DEFAULT 0,
       favorites INTEGER DEFAULT 0,
       views INTEGER DEFAULT 0,
@@ -156,10 +156,21 @@ export const initDatabase = async (): Promise<void> => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       team_id INTEGER NOT NULL,
       user_id INTEGER NOT NULL,
-      role TEXT DEFAULT 'member',
+      role TEXT DEFAULT 'member' CHECK(role IN ('leader', 'member')),
       UNIQUE(team_id, user_id)
     )
   `);
+
+  db.run('CREATE INDEX IF NOT EXISTS idx_nodes_story_id ON story_nodes(story_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_nodes_parent_id ON story_nodes(parent_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_nodes_selected ON story_nodes(story_id, is_selected)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_likes_user_story ON likes(user_id, story_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_coins_node ON coins(node_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_coins_user_node ON coins(user_id, node_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_stories_status ON stories(status)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_stories_author ON stories(author_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_team_members ON team_members(team_id, user_id)');
 
   db.run(`
     CREATE TABLE IF NOT EXISTS competitions (
