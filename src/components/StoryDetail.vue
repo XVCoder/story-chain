@@ -140,6 +140,7 @@ const handleAddNode = async () => {
  showAddNode.value = false;
  nodeContent.value = '';
  await fetchStory();
+ await fetchTimeline();
  }
  catch (error) {
  ElMessage.error('操作失败');
@@ -149,6 +150,7 @@ const handleSelectNode = async (nodeId: number) => {
  try {
  await nodeAPI.select(nodeId);
  await fetchStory();
+ await fetchTimeline();
  }
  catch (error) {
  ElMessage.error('操作失败');
@@ -161,7 +163,7 @@ const handleCoin = async (nodeId: number) => {
  }
  const oldPoints = store.user.points;
  try {
- const res = await interactionAPI.coin(nodeId, 1);
+ await interactionAPI.coin(nodeId, 1);
  store.user.points = oldPoints - 1;
  ElMessage.success('投币成功');
  await fetchStory();
@@ -260,7 +262,6 @@ onMounted(() => {
           <ElButton @click="handleFavorite" type="text">
             ⭐ {{ story.favorites }}
           </ElButton>
-          <ElButton v-if="isAuthor" @click="handleAutoSelect" type="warning" plain>自动更新主线</ElButton>
           <ElButton @click="showAddNode = true" type="primary" v-if="canAddNode">
             添加接龙
           </ElButton>
@@ -277,23 +278,11 @@ onMounted(() => {
 
       <ElCard v-if="timeline && timeline.nodes.length > 0" class="timeline-card">
         <div class="timeline-header">
-          <h2>主线故事</h2>
-          <ElTag type="success" size="small">共 {{ timeline.node_count }} 段</ElTag>
+          <h2>📖 主线故事</h2>
+          <ElTag type="success" size="small">{{ timeline.node_count }} 段 · 自动拼接</ElTag>
         </div>
-        <div class="timeline-inline">
-          <div v-for="(node, idx) in timeline.nodes" :key="node.id" class="tl-node">
-            <div class="tl-node-marker">
-              <div class="tl-dot" :class="{ active: idx === timeline.nodes.length - 1 }"></div>
-              <div v-if="idx < timeline.nodes.length - 1" class="tl-line"></div>
-            </div>
-            <div class="tl-content">
-              <div class="tl-meta">
-                <span class="tl-index">第 {{ idx + 1 }} 段</span>
-                <span class="tl-coins">💰 {{ node.coins }}</span>
-              </div>
-              <p class="tl-text">{{ node.content }}</p>
-            </div>
-          </div>
+        <div class="timeline-story">
+          {{ timeline.full_text }}
         </div>
       </ElCard>
 
@@ -517,13 +506,14 @@ onMounted(() => {
 .timeline-card {
   margin-top: 20px;
   border-left: 3px solid #409eff;
+  background: linear-gradient(135deg, #f0f5ff 0%, #fafafa 100%);
 }
 
 .timeline-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .timeline-header h2 {
@@ -532,71 +522,11 @@ onMounted(() => {
   color: #303133;
 }
 
-.timeline-inline {
-  padding-left: 8px;
-}
-
-.tl-node {
-  display: flex;
-  gap: 16px;
-}
-
-.tl-node-marker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 16px;
-  flex-shrink: 0;
-}
-
-.tl-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #dcdfe6;
-  flex-shrink: 0;
-  margin-top: 6px;
-}
-
-.tl-dot.active {
-  background: #409eff;
-  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.2);
-}
-
-.tl-line {
-  width: 2px;
-  flex: 1;
-  background: #e4e7ed;
-  min-height: 24px;
-}
-
-.tl-content {
-  flex: 1;
-  padding-bottom: 20px;
-}
-
-.tl-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.tl-index {
-  font-size: 13px;
-  font-weight: 600;
-  color: #409eff;
-}
-
-.tl-coins {
-  font-size: 13px;
-  color: #e6a23c;
-}
-
-.tl-text {
-  margin: 0;
+.timeline-story {
   color: #303133;
-  line-height: 1.8;
+  line-height: 2;
+  font-size: 15px;
   white-space: pre-wrap;
+  padding: 4px 0;
 }
 </style>
