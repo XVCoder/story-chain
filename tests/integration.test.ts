@@ -515,3 +515,137 @@ describe('Auto-select Main Line & Timeline', () => {
     expect(timelineRes.body.nodes[1].id).toBeGreaterThan(0);
   });
 });
+
+describe('Daily Coin Limit', () => {
+  let token1: string;
+  let token2: string;
+  let storyId: number;
+  let nodeId: number;
+  let userId1: number;
+  let userId2: number;
+  const suffix = Date.now();
+
+  beforeAll(async () => {
+    await initDatabase();
+
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: `coinLmt1_${suffix}`, password: 'testpass' });
+    const login1 = await request(app)
+      .post('/api/users/login')
+      .send({ username: `coinLmt1_${suffix}`, password: 'testpass' });
+    token1 = login1.body.token;
+    userId1 = login1.body.user.id;
+
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: `coinLmt2_${suffix}`, password: 'testpass' });
+    const login2 = await request(app)
+      .post('/api/users/login')
+      .send({ username: `coinLmt2_${suffix}`, password: 'testpass' });
+    token2 = login2.body.token;
+    userId2 = login2.body.user.id;
+
+    execute('UPDATE users SET points = 200 WHERE id = ?', [userId1]);
+    execute('UPDATE users SET points = 100 WHERE id = ?', [userId2]);
+
+    const storyRes = await request(app)
+      .post('/api/stories')
+      .set('Authorization', `Bearer ${token1}`)
+      .send({ title: `Coin Limit Story ${suffix}`, summary: 'Daily limit test', content: 'Root...', mode: 'free', max_nodes: 5 });
+    storyId = storyRes.body.id;
+
+    const nodesRes = await request(app).get(`/api/nodes/${storyId}`);
+    nodeId = nodesRes.body[0].id;
+  });
+
+  it('should allow coining up to 5 coins per node per day', async () => {
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post(`/api/nodes/${nodeId}/coin`)
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ amount: 1 });
+      expect(res.status).toBe(200);
+    }
+  });
+
+  it('should reject coining more than 5 coins per node per day', async () => {
+    const res = await request(app)
+      .post(`/api/nodes/${nodeId}/coin`)
+      .set('Authorization', `Bearer ${token1}`)
+      .send({ amount: 1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Daily coin limit reached for this node (max 5)');
+  });
+
+  it('should allow another user to coin the same node (their own daily limit)', async () => {
+    const res = await request(app)
+      .post(`/api/nodes/${nodeId}/coin`)
+      .set('Authorization', `Bearer ${token2}`)
+      .send({ amount: 1 });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('should track daily limit per-node independently', async () => {
+    const nodeRes = await request(app)
+      .post('/api/nodes')
+      .set('Authorization', `Bearer ${token1}`)
+      .send({ story_id: storyId, content: 'Another node...' });
+    const nodeId2 = nodeRes.body.id;
+
+    const res = await request(app)
+      .post(`/api/nodes/${nodeId2}/coin`)
+      .set('Authorization', `Bearer ${token1}`)
+      .send({ amount: 1 });
+
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('Daily Check-in', () => {
+  let token: string;
+  let userId: number;
+  const suffix = Date.now();
+
+  beforeAll(async () => {
+    await initDatabase();
+
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: `checkin_${suffix}`, password: 'testpass' });
+    const loginRes = await request(app)
+      .post('/api/users/login')
+      .send({ username: `checkin_${suffix}`, password: 'testpass' });
+    token = loginRes.body.token;
+    userId = loginRes.body.user.id;
+  });
+
+  it('should award 10 points on first check-in of the day', async () => {
+    const beforePoints = 100;
+
+    const res = await request(app)
+      .post('/api/users/check-in')
+      .set('Authorization', `Bearer ${token}`)
+      .send();
+
+    expect(res.status).toBe(200);
+    expect(res.body.points_awarded).toBe(10);
+
+    const profileRes = await request(app)
+      .get('/api/users/profile')
+      .set('Authorization', `Bearer ${token}`);
+    expect(profileRes.body.points).toBe(beforePoints + 10);
+  });
+
+  it('should reject duplicate check-in on the same day', async () => {
+    const res = await request(app)
+      .post('/api/users/check-in')
+      .set('Authorization', `Bearer ${token}`)
+      .send();
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Already checked in today');
+  });
+});

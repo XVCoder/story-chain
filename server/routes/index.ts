@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getUserProfile, updateUserProfile } from '../controllers/userController.js';
+import { register, login, getUserProfile, updateUserProfile, checkIn } from '../controllers/userController.js';
 import { createStory, getStories, getStoryById, updateStory, deleteStory, getMyStories, searchStories } from '../controllers/storyController.js';
 import { addNode, getNodesByStory, selectNode, autoSelectMainLine, getTimeline } from '../controllers/nodeController.js';
 import { likeStory, favoriteStory, coinNode, getUserFavorites } from '../controllers/interactionController.js';
@@ -13,6 +13,7 @@ router.post('/users/register', register);
 router.post('/users/login', login);
 router.get('/users/profile', authenticate, getUserProfile);
 router.put('/users/profile', authenticate, updateUserProfile);
+router.post('/users/check-in', authenticate, checkIn);
 
 router.post('/stories', authenticate, createStory);
 router.get('/stories', getStories);

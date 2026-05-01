@@ -156,21 +156,21 @@ const handleSelectNode = async (nodeId: number) => {
  }
 };
 const handleCoin = async (nodeId: number) => {
- if (!store.user || store.user.points < 1) {
- ElMessage.warning('积分不足');
- return;
- }
- const oldPoints = store.user.points;
- try {
- await interactionAPI.coin(nodeId, 1);
- store.user.points = oldPoints - 1;
- ElMessage.success('投币成功');
- await fetchStory();
- await fetchTimeline();
- }
- catch (error) {
- ElMessage.error('操作失败');
- }
+  if (!store.user || store.user.points < 1) {
+    ElMessage.warning('积分不足');
+    return;
+  }
+  const oldPoints = store.user.points;
+  try {
+    await interactionAPI.coin(nodeId, 1);
+    store.user.points = oldPoints - 1;
+    ElMessage.success('投币成功');
+    await fetchStory();
+    await fetchTimeline();
+  } catch (error: any) {
+    const msg = error?.response?.data?.message || '操作失败';
+    ElMessage.warning(msg);
+  }
 };
 const handlePublish = async () => {
  try {

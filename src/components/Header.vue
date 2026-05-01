@@ -44,6 +44,18 @@ const refreshUserPoints = async () => {
   }
 };
 
+const handleCheckIn = async () => {
+  if (!store.user) return;
+  try {
+    const res = await authAPI.checkIn();
+    ElMessage.success(`签到成功！获得 ${res.data.points_awarded} 个硬币`);
+    await refreshUserPoints();
+  } catch (error: any) {
+    const msg = error?.response?.data?.message || '签到失败';
+    ElMessage.warning(msg);
+  }
+};
+
 const goHome = () => {
   router.push('/home');
 };
@@ -78,6 +90,7 @@ defineExpose({ refreshInventory, refreshUserPoints });
             <span class="username">{{ store.user?.username }}</span>
           </span>
           <template #dropdown>
+            <ElDropdownItem @click="handleCheckIn">📅 签到</ElDropdownItem>
             <ElDropdownItem @click="router.push('/home')">创建故事</ElDropdownItem>
             <ElDropdownItem @click="showInventory = !showInventory">背包</ElDropdownItem>
             <ElDropdownItem @click="router.push('/profile')">个人中心</ElDropdownItem>

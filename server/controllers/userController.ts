@@ -65,3 +65,21 @@ export const updateUserProfile = (req: AuthRequest, res: Response) => {
     return res.status(400).json({ message: 'Error updating profile' });
   }
 };
+
+export const checkIn = (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const existing = queryOne('SELECT id FROM check_ins WHERE user_id = ? AND check_date = ?', [userId, today]);
+
+  if (existing) {
+    return res.status(400).json({ message: 'Already checked in today' });
+  }
+
+  const pointsAwarded = 10;
+  execute('INSERT INTO check_ins (user_id, check_date, points_awarded) VALUES (?, ?, ?)', [userId, today, pointsAwarded]);
+  execute('UPDATE users SET points = points + ? WHERE id = ?', [pointsAwarded, userId]);
+
+  res.json({ message: 'Check-in successful', points_awarded: pointsAwarded });
+};

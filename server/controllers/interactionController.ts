@@ -66,7 +66,20 @@ export const coinNode = (req: AuthRequest, res: Response) => {
     return res.status(400).json({ message: 'Insufficient points' });
   }
 
+  const today = new Date().toISOString().split('T')[0];
+  const dailyCoin = queryOne('SELECT daily_amount FROM daily_coins WHERE user_id = ? AND node_id = ? AND coin_date = ?', [user_id, node_id, today]);
+
+  if (dailyCoin && dailyCoin.daily_amount + amount > 5) {
+    return res.status(400).json({ message: 'Daily coin limit reached for this node (max 5)' });
+  }
+
   execute('UPDATE users SET points = points - ? WHERE id = ?', [amount, user_id]);
+
+  if (dailyCoin) {
+    execute('UPDATE daily_coins SET daily_amount = daily_amount + ? WHERE user_id = ? AND node_id = ? AND coin_date = ?', [amount, user_id, node_id, today]);
+  } else {
+    execute('INSERT INTO daily_coins (user_id, node_id, coin_date, daily_amount) VALUES (?, ?, ?, ?)', [user_id, node_id, today, amount]);
+  }
 
   const coin = queryOne('SELECT id FROM coins WHERE user_id = ? AND node_id = ?', [user_id, node_id]);
 

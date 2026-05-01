@@ -173,6 +173,28 @@ export const initDatabase = async (): Promise<void> => {
   db.run('CREATE INDEX IF NOT EXISTS idx_team_members ON team_members(team_id, user_id)');
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS daily_coins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      node_id INTEGER NOT NULL,
+      coin_date TEXT NOT NULL,
+      daily_amount INTEGER DEFAULT 0,
+      UNIQUE(user_id, node_id, coin_date)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS check_ins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      check_date TEXT NOT NULL,
+      points_awarded INTEGER DEFAULT 10,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, check_date)
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS competitions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,

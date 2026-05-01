@@ -51,6 +51,9 @@ export const addNode = (req: AuthRequest, res: Response) => {
     execute('INSERT INTO story_nodes (story_id, parent_id, content, author_id) VALUES (?, ?, ?, ?)', [story_id, parent_id || null, content.trim(), author_id]);
     execute('UPDATE stories SET current_nodes = current_nodes + 1 WHERE id = ?', [story_id]);
     const node = queryOne('SELECT id FROM story_nodes WHERE story_id = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [story_id, author_id]);
+
+    autoSelectMainLineInternal(Number(story_id));
+
     res.status(201).json({ id: node?.id });
   } catch (error) {
     return res.status(400).json({ message: 'Error adding node' });

@@ -21,6 +21,7 @@ export const authAPI = {
     api.post('/users/login', data),
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data: { email?: string }) => api.put('/users/profile', data),
+  checkIn: () => api.post('/users/check-in'),
 };
 
 export const storyAPI = {
