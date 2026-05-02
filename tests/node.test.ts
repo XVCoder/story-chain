@@ -13,7 +13,9 @@ describe('Node API', () => {
   let token: string;
   let otherToken: string;
   let storyId: number;
-  let nodeId: number;
+  let branchAId: number;
+  let branchBId: number;
+  let childOfBranchA: number;
 
   beforeAll(async () => {
     await initDatabase();
@@ -48,27 +50,67 @@ describe('Node API', () => {
       .send({ title: 'Node Select Story', summary: 'Test for node selection', status: 'ongoing' });
   });
 
-  it('should add multiple nodes', async () => {
-    const response1 = await request(app)
-      .post('/api/nodes')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ story_id: storyId, content: 'First branch...' });
-    expect(response1.status).toBe(201);
-    nodeId = response1.body.id;
-
-    const response2 = await request(app)
+  it('should add branch A (low coins)', async () => {
+    const response = await request(app)
       .post('/api/nodes')
       .set('Authorization', `Bearer ${otherToken}`)
-      .send({ story_id: storyId, parent_id: nodeId, content: 'Second branch...' });
-    expect(response2.status).toBe(201);
+      .send({ story_id: storyId, content: 'Branch A - low coins' });
+    expect(response.status).toBe(201);
+    branchAId = response.body.id;
   });
 
-  it('should get nodes for a story', async () => {
-    const response = await request(app).get(`/api/nodes/${storyId}`);
+  it('should add branch B (high coins via coin action)', async () => {
+    const response = await request(app)
+      .post('/api/nodes')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ story_id: storyId, content: 'Branch B - high coins' });
+    expect(response.status).toBe(201);
+    branchBId = response.body.id;
 
+    await request(app)
+      .post('/api/users/check-in')
+      .set('Authorization', `Bearer ${token}`);
+
+    const coinRes = await request(app)
+      .post(`/api/nodes/${branchBId}/coin`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ amount: 3 });
+    expect(coinRes.status).toBe(200);
+  });
+
+  it('should auto-select branch B with higher coins after coin action', async () => {
+    const storyRes = await request(app).get(`/api/stories/${storyId}`);
+    const nodes = storyRes.body.nodes as any[];
+    const branchA = nodes.find((n: any) => n.id === branchAId);
+    const branchB = nodes.find((n: any) => n.id === branchBId);
+    expect(branchB.coins).toBe(3);
+    expect(branchB.is_selected).toBeTruthy();
+    expect(branchA.is_selected).toBeFalsy();
+  });
+
+  it('should get all nodes for story', async () => {
+    const response = await request(app).get(`/api/nodes/${storyId}`);
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('should fail to select node by non-author', async () => {
+    const response = await request(app)
+      .put(`/api/nodes/${branchAId}/select`)
+      .set('Authorization', `Bearer ${otherToken}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe('Only story author can select nodes');
+  });
+
+  it('should add child under branch A and reach max nodes', async () => {
+    const response = await request(app)
+      .post('/api/nodes')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ story_id: storyId, parent_id: branchAId, content: 'Child of A...' });
+    expect(response.status).toBe(201);
+    childOfBranchA = response.body.id;
   });
 
   it('should fail to add node when story is maxed', async () => {
@@ -81,36 +123,42 @@ describe('Node API', () => {
     expect(response.body.message).toBe('Story has reached maximum nodes');
   });
 
-  describe('Select Node', () => {
-    it('should fail to select node by non-author', async () => {
-      const response = await request(app)
-        .put(`/api/nodes/${nodeId}/select`)
-        .set('Authorization', `Bearer ${otherToken}`);
+  it('should manually select branch A by author, overriding coin-based selection', async () => {
+    const response = await request(app)
+      .put(`/api/nodes/${branchAId}/select`)
+      .set('Authorization', `Bearer ${token}`);
 
-      expect(response.status).toBe(403);
-      expect(response.body.message).toBe('Only story author can select nodes');
-    });
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Node selected successfully');
+  });
 
-    it('should select a node by author', async () => {
-      const response = await request(app)
-        .put(`/api/nodes/${nodeId}/select`)
-        .set('Authorization', `Bearer ${token}`);
+  it('should mark branch A as selected and is_manual_selected', async () => {
+    const storyRes = await request(app).get(`/api/stories/${storyId}`);
+    const nodes = storyRes.body.nodes as any[];
+    const branchA = nodes.find((n: any) => n.id === branchAId);
+    const branchB = nodes.find((n: any) => n.id === branchBId);
 
-      expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Node selected successfully');
-    });
+    expect(branchA.is_selected).toBeTruthy();
+    expect(branchA.is_manual_selected).toBeTruthy();
+    expect(branchB.is_selected).toBeFalsy();
+  });
 
-    it('should mark node as selected', async () => {
-      const storyResponse = await request(app).get(`/api/stories/${storyId}`);
+  it('should continue chain from manually selected branch A to its child', async () => {
+    const storyRes = await request(app).get(`/api/stories/${storyId}`);
+    const nodes = storyRes.body.nodes as any[];
+    const childA = nodes.find((n: any) => n.id === childOfBranchA);
+    expect(childA.is_selected).toBeTruthy();
+  });
 
-      const selectedNode = storyResponse.body.nodes.find((n: any) => n.is_selected);
-      expect(selectedNode).toBeDefined();
-      expect(selectedNode.id).toBe(nodeId);
-    });
+  it('should show correct timeline with manual override', async () => {
+    const timelineRes = await request(app).get(`/api/stories/${storyId}/timeline`);
+    expect(timelineRes.body.node_count).toBe(3);
+    expect(timelineRes.body.nodes[1].id).toBe(branchAId);
+    expect(timelineRes.body.nodes[2].id).toBe(childOfBranchA);
+  });
 
-    it('should change story status to completed when max nodes reached', async () => {
-      const storyResponse = await request(app).get(`/api/stories/${storyId}`);
-      expect(storyResponse.body.status).toBe('completed');
-    });
+  it('should change story status to completed when max nodes reached', async () => {
+    const storyResponse = await request(app).get(`/api/stories/${storyId}`);
+    expect(storyResponse.body.status).toBe('completed');
   });
 });

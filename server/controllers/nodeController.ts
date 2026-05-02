@@ -78,7 +78,7 @@ export const selectNode = (req: AuthRequest, res: Response) => {
   const { node_id } = req.params;
   const user_id = req.user?.id;
 
-  const node = queryOne('SELECT id, story_id FROM story_nodes WHERE id = ?', [node_id]);
+  const node = queryOne('SELECT id, story_id, parent_id FROM story_nodes WHERE id = ?', [node_id]);
   
   if (!node) {
     return res.status(404).json({ message: 'Node not found' });
@@ -103,15 +103,21 @@ export const selectNode = (req: AuthRequest, res: Response) => {
     return res.status(403).json({ message: 'Only story author can select nodes' });
   }
 
-  execute('UPDATE story_nodes SET is_selected = FALSE WHERE story_id = ?', [node.story_id]);
-  execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [node_id]);
+  if (node.parent_id) {
+    execute('UPDATE story_nodes SET is_manual_selected = FALSE WHERE story_id = ? AND parent_id = ?', [node.story_id, node.parent_id]);
+  } else {
+    execute('UPDATE story_nodes SET is_manual_selected = FALSE WHERE story_id = ? AND parent_id IS NULL', [node.story_id]);
+  }
+  execute('UPDATE story_nodes SET is_manual_selected = TRUE WHERE id = ?', [node_id]);
+
+  const selectedCount = autoSelectMainLineInternal(node.story_id);
 
   const hasMaxNodes = story.max_nodes !== 0;
   const newStatus = hasMaxNodes && story.current_nodes >= story.max_nodes ? 'completed' : 'ongoing';
   execute('UPDATE stories SET status = ? WHERE id = ?', [newStatus, node.story_id]);
 
   calculatePoints(node.story_id, story.mode, story.team_id);
-  res.json({ message: 'Node selected successfully' });
+  res.json({ message: 'Node selected successfully', timeline_nodes: selectedCount });
 };
 
 export const autoSelectMainLine = (req: AuthRequest, res: Response) => {
@@ -136,21 +142,57 @@ export function autoSelectMainLineInternal(story_id: number): number {
 
   let count = 1;
   let currentParentId = root.id;
+  let isRootLevel = true;
 
   while (true) {
-    const bestChild = queryOne(`
-      SELECT id, coins, created_at
-      FROM story_nodes
-      WHERE story_id = ? AND parent_id = ?
-      ORDER BY coins DESC, created_at ASC
-      LIMIT 1
-    `, [story_id, currentParentId]);
+    let bestChild;
+
+    if (isRootLevel) {
+      const manualChild = queryOne(`
+        SELECT id, coins, created_at
+        FROM story_nodes
+        WHERE story_id = ? AND (parent_id = ? OR (parent_id IS NULL AND id != ?)) AND is_manual_selected = TRUE
+        LIMIT 1
+      `, [story_id, root.id, root.id]);
+
+      if (manualChild) {
+        bestChild = manualChild;
+      } else {
+        bestChild = queryOne(`
+          SELECT id, coins, created_at
+          FROM story_nodes
+          WHERE story_id = ? AND (parent_id = ? OR (parent_id IS NULL AND id != ?))
+          ORDER BY coins DESC, created_at ASC
+          LIMIT 1
+        `, [story_id, root.id, root.id]);
+      }
+    } else {
+      const manualChild = queryOne(`
+        SELECT id, coins, created_at
+        FROM story_nodes
+        WHERE story_id = ? AND parent_id = ? AND is_manual_selected = TRUE
+        LIMIT 1
+      `, [story_id, currentParentId]);
+
+      if (manualChild) {
+        bestChild = manualChild;
+      } else {
+        bestChild = queryOne(`
+          SELECT id, coins, created_at
+          FROM story_nodes
+          WHERE story_id = ? AND parent_id = ?
+          ORDER BY coins DESC, created_at ASC
+          LIMIT 1
+        `, [story_id, currentParentId]);
+      }
+    }
 
     if (!bestChild) break;
 
     execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [bestChild.id]);
     currentParentId = bestChild.id;
     count++;
+    isRootLevel = false;
   }
 
   return count;

@@ -98,9 +98,14 @@ export const initDatabase = async (): Promise<void> => {
       author_id INTEGER NOT NULL,
       coins INTEGER DEFAULT 0,
       is_selected BOOLEAN DEFAULT FALSE,
+      is_manual_selected BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  try {
+    db.run('ALTER TABLE story_nodes ADD COLUMN is_manual_selected BOOLEAN DEFAULT FALSE');
+  } catch {}
 
   db.run(`
     CREATE TABLE IF NOT EXISTS likes (
