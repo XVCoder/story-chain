@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { register, login, getUserProfile, updateUserProfile, checkIn, getUserStats } from '../controllers/userController.js';
 import { createStory, getStories, getStoryById, updateStory, deleteStory, getMyStories, searchStories } from '../controllers/storyController.js';
-import { addNode, getNodesByStory, selectNode, autoSelectMainLine, getTimeline } from '../controllers/nodeController.js';
+import { addNode, getNodesByStory, selectNode, unselectNode, autoSelectMainLine, getTimeline } from '../controllers/nodeController.js';
 import { likeStory, favoriteStory, coinNode, getUserFavorites } from '../controllers/interactionController.js';
 import { exchangePoints, getUserInventory, useItem } from '../controllers/inventoryController.js';
 import { createTeam, joinTeam, getTeams, getUserTeams, getTeamMembers, leaveTeam, createCompetition, joinCompetition, getCompetitions, getCompetitionLeaderboard } from '../controllers/teamController.js';
@@ -28,6 +28,7 @@ router.delete('/stories/:id', authenticate, deleteStory);
 router.post('/nodes', authenticate, addNode);
 router.get('/nodes/:story_id', getNodesByStory);
 router.put('/nodes/:node_id/select', authenticate, selectNode);
+router.put('/nodes/:node_id/unselect', authenticate, unselectNode);
 router.post('/nodes/:story_id/auto-select', authenticate, autoSelectMainLine);
 router.get('/stories/:story_id/timeline', getTimeline);
 

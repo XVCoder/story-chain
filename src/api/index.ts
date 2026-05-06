@@ -44,6 +44,7 @@ export const nodeAPI = {
     api.post('/nodes', data),
   getByStory: (story_id: number) => api.get(`/nodes/${story_id}`),
   select: (node_id: number) => api.put(`/nodes/${node_id}/select`),
+  unselect: (node_id: number) => api.put(`/nodes/${node_id}/unselect`),
   autoSelect: (story_id: number) => api.post(`/nodes/${story_id}/auto-select`),
 };
 

@@ -120,6 +120,46 @@ export const selectNode = (req: AuthRequest, res: Response) => {
   res.json({ message: 'Node selected successfully', timeline_nodes: selectedCount });
 };
 
+export const unselectNode = (req: AuthRequest, res: Response) => {
+  const { node_id } = req.params;
+  const user_id = req.user?.id;
+
+  const node = queryOne('SELECT id, story_id, parent_id FROM story_nodes WHERE id = ?', [node_id]);
+
+  if (!node) {
+    return res.status(404).json({ message: 'Node not found' });
+  }
+
+  const story = queryOne('SELECT author_id, mode, team_id FROM stories WHERE id = ?', [node.story_id]);
+
+  if (!story) {
+    return res.status(404).json({ message: 'Story not found' });
+  }
+
+  if (story.mode === 'solo') {
+    return res.status(400).json({ message: 'Solo mode does not require node selection' });
+  }
+
+  if (story.mode === 'team') {
+    const leader = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [story.team_id, user_id, 'leader']);
+    if (!leader) {
+      return res.status(403).json({ message: 'Only team leader can change node selection' });
+    }
+  } else if (story.author_id !== user_id) {
+    return res.status(403).json({ message: 'Only story author can change node selection' });
+  }
+
+  if (node.parent_id) {
+    execute('UPDATE story_nodes SET is_manual_selected = FALSE WHERE story_id = ? AND parent_id = ?', [node.story_id, node.parent_id]);
+  } else {
+    execute('UPDATE story_nodes SET is_manual_selected = FALSE WHERE story_id = ? AND parent_id IS NULL', [node.story_id]);
+  }
+
+  const selectedCount = autoSelectMainLineInternal(node.story_id);
+
+  res.json({ message: 'Manual selection cancelled', timeline_nodes: selectedCount });
+};
+
 export const autoSelectMainLine = (req: AuthRequest, res: Response) => {
   const { story_id } = req.params;
 

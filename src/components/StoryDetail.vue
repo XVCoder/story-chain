@@ -5,6 +5,7 @@ import { ElDialog } from 'element-plus';
 import type { Story } from '../types';
 import { storyAPI, nodeAPI, interactionAPI, inventoryAPI, authAPI } from '../api';
 import { store } from '../store';
+import TreeNode from './TreeNode.vue';
 const props = defineProps<{
   id: string;
 }>();
@@ -155,6 +156,15 @@ const handleSelectNode = async (nodeId: number) => {
  ElMessage.error('操作失败');
  }
 };
+const handleUnselectNode = async (nodeId: number) => {
+  try {
+    await nodeAPI.unselect(nodeId);
+    await fetchStory();
+    await fetchTimeline();
+  } catch {
+    ElMessage.error('操作失败');
+  }
+};
 const handleCoin = async (nodeId: number) => {
   if (!store.user || store.user.points < 1) {
     ElMessage.warning('积分不足');
@@ -289,37 +299,17 @@ onMounted(() => {
         <h2>故事节点 ({{ story.current_nodes }}/{{ story.max_nodes }})</h2>
         <div class="node-tree">
           <div v-for="(node, index) in nodeTree" :key="node.id" class="tree-root">
-            <div class="node-item" :class="{ selected: node.is_selected }">
-              <div class="node-header">
-                <span class="node-number">第 {{ index + 1 }} 段</span>
-                <span class="node-coins">💰 {{ node.coins }}</span>
-                <ElTag v-if="node.is_selected" type="success" size="small">已选中</ElTag>
-              </div>
-              <p class="node-content">{{ node.content }}</p>
-              <div class="node-actions">
-                <ElButton size="small" @click="handleCoin(node.id)">投币</ElButton>
-                <ElButton size="small" type="primary" plain @click="handleReplyTo(node.id)" v-if="canAddNode">在此接龙</ElButton>
-                <ElButton size="small" type="primary" v-if="isAuthor && !node.is_selected" @click="handleSelectNode(node.id)">选为下一节点</ElButton>
-              </div>
-            </div>
-            <div v-if="node.children.length > 0" class="tree-branches">
-              <div v-for="child in node.children" :key="child.id" class="tree-branch">
-                <div class="branch-connector"></div>
-                <div class="node-item branch-item" :class="{ selected: child.is_selected }">
-                  <div class="node-header">
-                    <span class="node-number">接龙</span>
-                    <span class="node-coins">💰 {{ child.coins }}</span>
-                    <ElTag v-if="child.is_selected" type="success" size="small">已选中</ElTag>
-                  </div>
-                  <p class="node-content">{{ child.content }}</p>
-                  <div class="node-actions">
-                    <ElButton size="small" @click="handleCoin(child.id)">投币</ElButton>
-                    <ElButton size="small" type="primary" plain @click="handleReplyTo(child.id)" v-if="canAddNode">在此接龙</ElButton>
-                    <ElButton size="small" type="primary" v-if="isAuthor && !child.is_selected" @click="handleSelectNode(child.id)">选为下一节点</ElButton>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TreeNode
+              :node="node"
+              :depth="0"
+              :can-add-node="canAddNode"
+              :is-author="isAuthor"
+              :root-index="index"
+              @coin="handleCoin"
+              @reply="handleReplyTo"
+              @select="handleSelectNode"
+              @unselect="handleUnselectNode"
+            />
           </div>
         </div>
       </div>
@@ -429,79 +419,9 @@ onMounted(() => {
   background: #fff;
 }
 
-.tree-root.selected, .node-item.selected {
+.tree-root.selected {
   border-color: #409eff;
   background-color: #ecf5ff;
-}
-
-.tree-branches {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-  padding-left: 24px;
-  border-left: 2px solid #e4e7ed;
-}
-
-.tree-branch {
-  position: relative;
-}
-
-.branch-connector {
-  position: absolute;
-  left: -24px;
-  top: 50%;
-  width: 24px;
-  height: 2px;
-  background: #e4e7ed;
-}
-
-.node-item {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  transition: all 0.2s;
-}
-
-.node-item:hover {
-  border-color: #dcdfe6;
-}
-
-.node-item.selected {
-  border-color: #409eff;
-  background-color: #ecf5ff;
-}
-
-.branch-item {
-  border: 1px solid #f0f0f0;
-  background: #fafafa;
-}
-
-.node-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.node-number {
-  font-weight: bold;
-  color: #409eff;
-}
-
-.node-coins {
-  margin-left: auto;
-}
-
-.node-content {
-  color: #303133;
-  line-height: 1.8;
-}
-
-.node-actions {
-  margin-top: 12px;
-  display: flex;
-  gap: 10px;
 }
 
 .fab-icon {
