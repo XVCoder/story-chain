@@ -77,19 +77,27 @@ export const updateUserProfile = (req: AuthRequest, res: Response) => {
 export const checkIn = (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
 
-  const today = new Date().toISOString().split('T')[0];
-
-  const existing = queryOne('SELECT id FROM check_ins WHERE user_id = ? AND check_date = ?', [userId, today]);
-
-  if (existing) {
-    return res.status(400).json({ message: 'Already checked in today' });
+  if (!userId) {
+    return res.status(401).json({ message: 'Authentication required' });
   }
 
-  const pointsAwarded = 10;
-  execute('INSERT INTO check_ins (user_id, check_date, points_awarded) VALUES (?, ?, ?)', [userId, today, pointsAwarded]);
-  execute('UPDATE users SET points = points + ? WHERE id = ?', [pointsAwarded, userId]);
+  const today = new Date().toISOString().split('T')[0];
 
-  res.json({ message: 'Check-in successful', points_awarded: pointsAwarded });
+  try {
+    const existing = queryOne('SELECT id FROM check_ins WHERE user_id = ? AND check_date = ?', [userId, today]);
+
+    if (existing) {
+      return res.status(400).json({ message: 'Already checked in today' });
+    }
+
+    const pointsAwarded = 10;
+    execute('INSERT INTO check_ins (user_id, check_date, points_awarded) VALUES (?, ?, ?)', [userId, today, pointsAwarded]);
+    execute('UPDATE users SET points = points + ? WHERE id = ?', [pointsAwarded, userId]);
+
+    res.json({ message: 'Check-in successful', points_awarded: pointsAwarded });
+  } catch (error) {
+    return res.status(500).json({ message: 'Check-in failed due to server error' });
+  }
 };
 
 export const getUserStats = (req: AuthRequest, res: Response) => {
