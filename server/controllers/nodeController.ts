@@ -253,7 +253,7 @@ export const getTimeline = (req: Request, res: Response) => {
     ORDER BY id ASC
   `, [story_id]) as any[];
 
-  const fullText = timelineNodes.map((n: any) => n.content.replace(/[\r\n]/g, '')).join('');
+  const fullText = timelineNodes.map((n: any) => '　　' + n.content.replace(/[\r\n]/g, '')).join('\n');
 
   res.json({
     story_id: story.id,
