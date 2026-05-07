@@ -101,7 +101,10 @@ defineExpose({ refreshInventory, refreshUserPoints });
     </div>
 
     <div v-if="showInventory" class="inventory-panel">
-        <h3>背包</h3>
+        <div class="inventory-header">
+          <h3>背包</h3>
+          <button class="close-btn" @click="showInventory = false">✕</button>
+        </div>
         <div class="inventory-items">
           <div v-for="item in store.inventory" :key="item.item_type" class="inventory-item">
             <span class="item-icon">✨</span>
@@ -198,6 +201,32 @@ defineExpose({ refreshInventory, refreshUserPoints });
   padding: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   min-width: 250px;
+}
+
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.inventory-header h3 {
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #909399;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  background: #f0f0f0;
+  color: #303133;
 }
 
 .inventory-items {

@@ -143,8 +143,8 @@ onMounted(() => {
       </div>
       
       <div class="sort-control">
-        <span>排序：</span>
-        <ElSelect v-model="sortBy" size="small">
+        <span style="width:45px;font-size:14px;">排序：</span>
+        <ElSelect v-model="sortBy" size="small" style="width:100px">
           <ElOption label="最新发布" value="time" />
           <ElOption label="热度最高" value="hot" />
         </ElSelect>
