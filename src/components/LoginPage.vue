@@ -2,7 +2,7 @@
 import { useRouter } from 'vue-router';
 import { ElButton, ElForm, ElFormItem, ElInput, ElMessage, ElTabs, ElTabPane } from 'element-plus';
 import { authAPI } from '../api';
-import { setUser, store } from '../store';
+import { setUser } from '../store';
 
 const router = useRouter();
 const activeTab = ref('login');
@@ -22,7 +22,13 @@ const handleLogin = async () => {
     localStorage.setItem('token', response.data.token);
     setUser(response.data.user);
     ElMessage.success('登录成功');
-    router.push('/home');
+    const redirect = localStorage.getItem('redirectAfterLogin');
+    if (redirect) {
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirect);
+    } else {
+      router.push('/home');
+    }
   } catch {
     ElMessage.error('登录失败，请检查用户名和密码');
   } finally {
@@ -53,7 +59,13 @@ const handleRegister = async () => {
     localStorage.setItem('token', loginRes.data.token);
     setUser(loginRes.data.user);
     ElMessage.success('注册成功');
-    router.push('/home');
+    const redirect = localStorage.getItem('redirectAfterLogin');
+    if (redirect) {
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirect);
+    } else {
+      router.push('/home');
+    }
   } catch {
     ElMessage.error('注册失败，用户名或邮箱已存在');
   } finally {

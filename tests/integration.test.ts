@@ -649,3 +649,139 @@ describe('Daily Check-in', () => {
     expect(res.body.message).toBe('Already checked in today');
   });
 });
+
+describe('Author Info & Published Story', () => {
+  let token: string;
+  let otherToken: string;
+  let storyId: number;
+  let publishedStoryId: number;
+  const suffix = Date.now();
+
+  beforeAll(async () => {
+    await initDatabase();
+
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: `authoruser_${suffix}`, password: 'testpass' });
+    const loginRes = await request(app)
+      .post('/api/users/login')
+      .send({ username: `authoruser_${suffix}`, password: 'testpass' });
+    token = loginRes.body.token;
+
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: `authorjoin_${suffix}`, password: 'testpass' });
+    const otherLogin = await request(app)
+      .post('/api/users/login')
+      .send({ username: `authorjoin_${suffix}`, password: 'testpass' });
+    otherToken = otherLogin.body.token;
+
+    const storyRes = await request(app)
+      .post('/api/stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: `Author Story ${suffix}`, summary: 'Author test', content: 'Once...', mode: 'free', max_nodes: 5 });
+    storyId = storyRes.body.id;
+
+    const pubRes = await request(app)
+      .post('/api/stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: `Published Author ${suffix}`, summary: 'Published', content: 'Published content', mode: 'free', max_nodes: 5 });
+    publishedStoryId = pubRes.body.id;
+  });
+
+  it('should return author_name in story list', async () => {
+    const res = await request(app).get('/api/stories');
+    expect(res.status).toBe(200);
+    const story = res.body.find((s: any) => s.id === storyId);
+    expect(story).toBeDefined();
+    expect(story.author_name).toBe(`authoruser_${suffix}`);
+  });
+
+  it('should return author_name in story detail', async () => {
+    const res = await request(app).get(`/api/stories/${storyId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.author_name).toBe(`authoruser_${suffix}`);
+  });
+
+  it('should return participants in story detail', async () => {
+    await request(app)
+      .post('/api/nodes')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ story_id: storyId, content: 'Join by other' });
+
+    const res = await request(app).get(`/api/stories/${storyId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.participants).toBeDefined();
+    expect(Array.isArray(res.body.participants)).toBe(true);
+    expect(res.body.participants.length).toBeGreaterThanOrEqual(2);
+    const names = res.body.participants.map((p: any) => p.username);
+    expect(names).toContain(`authoruser_${suffix}`);
+    expect(names).toContain(`authorjoin_${suffix}`);
+  });
+
+  it('should return author_name in nodes list', async () => {
+    const res = await request(app).get(`/api/nodes/${storyId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBeGreaterThanOrEqual(2);
+    const rootNode = res.body[0];
+    expect(rootNode.author_name).toBe(`authoruser_${suffix}`);
+    const otherNode = res.body.find((n: any) => n.author_name === `authorjoin_${suffix}`);
+    expect(otherNode).toBeDefined();
+  });
+
+  it('should return author_name in timeline', async () => {
+    const res = await request(app).get(`/api/stories/${storyId}/timeline`);
+    expect(res.status).toBe(200);
+    expect(res.body.nodes.length).toBeGreaterThanOrEqual(1);
+    expect(res.body.nodes[0].author_name).toBe(`authoruser_${suffix}`);
+  });
+
+  it('should return author_name in search results', async () => {
+    await request(app)
+      .put(`/api/stories/${publishedStoryId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: `Published Author ${suffix}`, summary: 'Published', status: 'published' });
+
+    const res = await request(app).get('/api/stories/search').query({ q: `Published Author ${suffix}` });
+    expect(res.status).toBe(200);
+    const found = res.body.find((s: any) => s.id === publishedStoryId);
+    expect(found).toBeDefined();
+    expect(found.author_name).toBe(`authoruser_${suffix}`);
+  });
+
+  it('should access published story without auth via /api/published/:id', async () => {
+    const res = await request(app).get(`/api/published/${publishedStoryId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe(`Published Author ${suffix}`);
+    expect(res.body.author_name).toBe(`authoruser_${suffix}`);
+    expect(res.body.participants).toBeDefined();
+  });
+
+  it('should return 404 for non-existent published story', async () => {
+    const res = await request(app).get('/api/published/99999');
+    expect(res.status).toBe(404);
+  });
+
+  it('should return author_name in my stories', async () => {
+    const res = await request(app)
+      .get('/api/stories/my')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBeGreaterThanOrEqual(1);
+    expect(res.body[0].author_name).toBe(`authoruser_${suffix}`);
+  });
+
+  it('should return author_name in favorites', async () => {
+    await request(app)
+      .post(`/api/stories/${publishedStoryId}/favorite`)
+      .set('Authorization', `Bearer ${otherToken}`);
+
+    const res = await request(app)
+      .get('/api/favorites')
+      .set('Authorization', `Bearer ${otherToken}`);
+    expect(res.status).toBe(200);
+    const fav = res.body.find((s: any) => s.id === publishedStoryId);
+    expect(fav).toBeDefined();
+    expect(fav.author_name).toBe(`authoruser_${suffix}`);
+  });
+});

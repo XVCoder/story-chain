@@ -31,6 +31,7 @@ export const storyAPI = {
   getAll: (params: { status?: string; mode?: string; sort_by?: string; page?: number; limit?: number }) =>
     api.get('/stories', { params }),
   getById: (id: number) => api.get(`/stories/${id}`),
+  getPublished: (id: number) => api.get(`/published/${id}`),
   update: (id: number, data: { title?: string; summary?: string; status?: string }) =>
     api.put(`/stories/${id}`, data),
   delete: (id: number) => api.delete(`/stories/${id}`),

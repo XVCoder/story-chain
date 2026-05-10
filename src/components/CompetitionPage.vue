@@ -82,8 +82,8 @@ const statusText = (status: string) => {
   return map[status] || status;
 };
 
-const statusType = (status: string) => {
-  const map: Record<string, string> = { active: 'success', ended: 'info', pending: 'warning' };
+const statusType = (status: string): 'info' | 'primary' | 'success' | 'warning' | 'danger' => {
+  const map: Record<string, 'info' | 'primary' | 'success' | 'warning' | 'danger'> = { active: 'success', ended: 'info', pending: 'warning' };
   return map[status] || 'info';
 };
 

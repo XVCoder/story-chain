@@ -27,6 +27,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/read/:id',
+      name: 'published-story',
+      component: () => import('../components/PublishedStory.vue'),
+      props: true,
+    },
+    {
       path: '/profile',
       name: 'profile',
       component: () => import('../components/ProfilePage.vue'),
@@ -58,6 +64,7 @@ router.beforeEach((to, _from, next) => {
   const isAuthenticated = !!token || !!store.user;
 
   if (to.meta.requiresAuth && !isAuthenticated) {
+    localStorage.setItem('redirectAfterLogin', to.fullPath);
     next({ name: 'login' });
   } else if (to.name === 'login' && isAuthenticated) {
     next({ name: 'home' });

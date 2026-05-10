@@ -69,7 +69,13 @@ export const addNode = (req: AuthRequest, res: Response) => {
 export const getNodesByStory = (req: Request, res: Response) => {
   const { story_id } = req.params;
 
-  const nodes = queryAll('SELECT * FROM story_nodes WHERE story_id = ? ORDER BY created_at ASC', [story_id]) as any[];
+  const nodes = queryAll(`
+    SELECT n.*, u.username AS author_name
+    FROM story_nodes n
+    LEFT JOIN users u ON n.author_id = u.id
+    WHERE n.story_id = ?
+    ORDER BY n.created_at ASC
+  `, [story_id]) as any[];
 
   res.json(nodes);
 };
@@ -247,10 +253,11 @@ export const getTimeline = (req: Request, res: Response) => {
   }
 
   const timelineNodes = queryAll(`
-    SELECT id, content, author_id, coins, created_at
-    FROM story_nodes
-    WHERE story_id = ? AND is_selected = TRUE
-    ORDER BY id ASC
+    SELECT n.id, n.content, n.author_id, n.coins, n.created_at, u.username AS author_name
+    FROM story_nodes n
+    LEFT JOIN users u ON n.author_id = u.id
+    WHERE n.story_id = ? AND n.is_selected = TRUE
+    ORDER BY n.id ASC
   `, [story_id]) as any[];
 
   const fullText = timelineNodes.map((n: any) => '　　' + n.content.replace(/[\r\n]/g, '')).join('\n');

@@ -40,8 +40,8 @@ const statusText = (status: string) => {
   return map[status] || status;
 };
 
-const statusType = (status: string) => {
-  const map: Record<string, string> = { draft: 'info', ongoing: 'warning', completed: 'success', published: 'primary' };
+const statusType = (status: string): 'info' | 'primary' | 'success' | 'warning' | 'danger' => {
+  const map: Record<string, 'info' | 'primary' | 'success' | 'warning' | 'danger'> = { draft: 'info', ongoing: 'warning', completed: 'success', published: 'primary' };
   return map[status] || 'info';
 };
 

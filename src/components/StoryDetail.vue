@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router';
 import { ElButton, ElTag, ElCard, ElInput, ElMessage } from 'element-plus';
 import { ElDialog } from 'element-plus';
 import type { Story } from '../types';
-import { storyAPI, nodeAPI, interactionAPI, inventoryAPI, authAPI } from '../api';
+import { storyAPI, nodeAPI, interactionAPI, inventoryAPI } from '../api';
 import { store } from '../store';
 import TreeNode from './TreeNode.vue';
 const props = defineProps<{
@@ -18,7 +18,6 @@ const parentIdForAdd = ref<number | undefined>(undefined);
 const showAIPolish = ref(false);
 const showHint = ref(false);
 const showSkip = ref(false);
-const hintContent = ref('');
 const timeline = ref<{ nodes: any[]; full_text: string; node_count: number } | null>(null);
 const modeText = computed(() => {
  const modes: Record<string, string> = {
@@ -39,9 +38,9 @@ const statusText = computed(() => {
  return story.value ? (statuses[story.value.status] || story.value.status) : '';
 });
 const canAddNode = computed(() => {
-  return story.value?.status === 'ongoing' &&
+  return !!(story.value?.status === 'ongoing' &&
     (story.value.max_nodes === 0 || story.value.current_nodes < story.value.max_nodes) &&
-    store.user;
+    store.user);
 });
 const isAuthor = computed(() => {
   return store.user?.id === story.value?.author_id;
@@ -119,6 +118,22 @@ const handleFavorite = async () => {
  ElMessage.error('操作失败');
  }
 };
+const handleShare = async () => {
+  if (!story.value) return;
+  const url = `${window.location.origin}/read/${story.value.id}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    ElMessage.success('阅读链接已复制到剪贴板');
+  } catch {
+    const input = document.createElement('input');
+    input.value = url;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    ElMessage.success('阅读链接已复制到剪贴板');
+  }
+};
 const handleAddNode = async () => {
   if (!nodeContent.value.trim()) {
     ElMessage.warning('请输入内容');
@@ -141,7 +156,7 @@ const handleAddNode = async () => {
   }
 };
 
-const handleReplyTo = (nodeId: number) => {
+const handleReplyTo = (nodeId?: number) => {
   parentIdForAdd.value = nodeId;
   nodeContent.value = '';
   showAddNode.value = true;
@@ -270,6 +285,9 @@ onMounted(() => {
           </ElButton>
           <ElButton @click="handleFavorite" type="text">
             ⭐ {{ story.favorites }}
+          </ElButton>
+          <ElButton @click="handleShare" type="text" v-if="story.status === 'published'">
+            🔗 分享
           </ElButton>
           <ElButton @click="handleReplyTo(undefined)" type="primary" v-if="canAddNode">
               添加接龙

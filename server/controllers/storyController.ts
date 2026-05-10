@@ -56,23 +56,23 @@ export const getStories = (req: Request, res: Response) => {
   const { status, mode, sort_by, page = 1, limit = 10 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
-  let query = 'SELECT * FROM stories WHERE 1=1';
+  let query = 'SELECT s.*, u.username AS author_name FROM stories s LEFT JOIN users u ON s.author_id = u.id WHERE 1=1';
   const params: any[] = [];
 
   if (status) {
-    query += ' AND status = ?';
+    query += ' AND s.status = ?';
     params.push(status);
   }
 
   if (mode) {
-    query += ' AND mode = ?';
+    query += ' AND s.mode = ?';
     params.push(mode);
   }
 
   if (sort_by === 'hot') {
-    query += ' ORDER BY (likes + favorites) DESC';
+    query += ' ORDER BY (s.likes + s.favorites) DESC';
   } else {
-    query += ' ORDER BY created_at DESC';
+    query += ' ORDER BY s.created_at DESC';
   }
 
   query += ' LIMIT ? OFFSET ?';
@@ -86,7 +86,12 @@ export const getStories = (req: Request, res: Response) => {
 export const getStoryById = (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const story = queryOne('SELECT * FROM stories WHERE id = ?', [id]);
+  const story = queryOne(`
+    SELECT s.*, u.username AS author_name
+    FROM stories s
+    LEFT JOIN users u ON s.author_id = u.id
+    WHERE s.id = ?
+  `, [id]);
   
   if (!story) {
     return res.status(404).json({ message: 'Story not found' });
@@ -95,9 +100,23 @@ export const getStoryById = (req: Request, res: Response) => {
   execute('UPDATE stories SET views = views + 1 WHERE id = ?', [id]);
   story.views = (story.views || 0) + 1;
 
-  const nodes = queryAll('SELECT * FROM story_nodes WHERE story_id = ? ORDER BY created_at ASC', [id]) as any[];
+  const nodes = queryAll(`
+    SELECT n.*, u.username AS author_name
+    FROM story_nodes n
+    LEFT JOIN users u ON n.author_id = u.id
+    WHERE n.story_id = ?
+    ORDER BY n.created_at ASC
+  `, [id]) as any[];
 
-  res.json({ ...story, nodes });
+  const participants = queryAll(`
+    SELECT DISTINCT u.id, u.username
+    FROM story_nodes n
+    INNER JOIN users u ON n.author_id = u.id
+    WHERE n.story_id = ?
+    ORDER BY u.username ASC
+  `, [id]) as any[];
+
+  res.json({ ...story, nodes, participants });
 };
 
 export const updateStory = (req: AuthRequest, res: Response) => {
@@ -171,8 +190,11 @@ export const getMyStories = (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
 
   const stories = queryAll(`
-    SELECT * FROM stories WHERE author_id = ?
-    ORDER BY created_at DESC
+    SELECT s.*, u.username AS author_name
+    FROM stories s
+    LEFT JOIN users u ON s.author_id = u.id
+    WHERE s.author_id = ?
+    ORDER BY s.created_at DESC
   `, [userId]) as any[];
 
   res.json(stories);
@@ -182,16 +204,18 @@ export const searchStories = (req: Request, res: Response) => {
   const { q } = req.query;
 
   if (!q) {
-    const stories = queryAll('SELECT * FROM stories WHERE status = ? ORDER BY created_at DESC', ['published']) as any[];
+    const stories = queryAll('SELECT s.*, u.username AS author_name FROM stories s LEFT JOIN users u ON s.author_id = u.id WHERE s.status = ? ORDER BY s.created_at DESC', ['published']) as any[];
     return res.json(stories);
   }
 
   const searchTerm = `%${q}%`;
   const stories = queryAll(`
-    SELECT * FROM stories
-    WHERE (title LIKE ? OR summary LIKE ?)
-    AND status = ?
-    ORDER BY created_at DESC
+    SELECT s.*, u.username AS author_name
+    FROM stories s
+    LEFT JOIN users u ON s.author_id = u.id
+    WHERE (s.title LIKE ? OR s.summary LIKE ?)
+    AND s.status = ?
+    ORDER BY s.created_at DESC
   `, [searchTerm, searchTerm, 'published']) as any[];
 
   res.json(stories);

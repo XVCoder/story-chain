@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElCard, ElTag, ElButton } from 'element-plus';
 import type { Story } from '../types';
 
 const props = defineProps<{
   story: Story;
 }>();
+
+const router = useRouter();
 
 const emit = defineEmits<{
   (e: 'view', id: number): void;
@@ -52,15 +55,25 @@ const statusColor = computed((): 'info' | 'primary' | 'success' | 'warning' | 'd
   };
   return colors[props.story.status];
 });
+
+const isPublished = computed(() => props.story.status === 'published');
+
+const handleView = () => {
+  if (isPublished.value) {
+    router.push(`/read/${props.story.id}`);
+  } else {
+    emit('view', props.story.id);
+  }
+};
 </script>
 
 <template>
   <ElCard class="story-card" hover>
     <div class="story-header">
       <ElTag :type="modeColor">{{ modeText }}</ElTag>
-      <ElTag :type="statusColor">{{ statusText }}</ElTag>
+      <ElTag :type="statusColor" style="margin-left: 10px">{{ statusText }}</ElTag>
     </div>
-    <h3 class="story-title" @click="emit('view', story.id)">{{ story.title }}</h3>
+    <h3 class="story-title" @click="handleView">{{ story.title }}</h3>
     <p class="story-summary">{{ story.summary }}</p>
     <div class="story-stats">
       <span class="stat-item">
@@ -81,8 +94,13 @@ const statusColor = computed((): 'info' | 'primary' | 'success' | 'warning' | 'd
       </span>
     </div>
     <div class="story-footer">
-      <span class="time">{{ new Date(story.created_at).toLocaleDateString() }}</span>
-      <ElButton type="primary" size="small" @click="emit('view', story.id)">查看详情</ElButton>
+      <div class="footer-left">
+        <span v-if="story.author_name" class="author">{{ story.author_name }}</span>
+        <span class="time">{{ new Date(story.created_at).toLocaleDateString() }}</span>
+      </div>
+      <ElButton type="primary" size="small" @click="handleView">
+        {{ isPublished ? '阅读' : '查看详情' }}
+      </ElButton>
     </div>
   </ElCard>
 </template>
@@ -138,6 +156,18 @@ const statusColor = computed((): 'info' | 'primary' | 'success' | 'warning' | 'd
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.author {
+  color: #67c23a;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .time {

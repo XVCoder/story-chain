@@ -54,7 +54,7 @@ const handleCreateStory = async () => {
   }
   creating.value = true;
   try {
-    const res = await storyAPI.create(createForm.value);
+    await storyAPI.create(createForm.value);
     ElMessage.success('故事创建成功');
     showCreateDialog.value = false;
     createForm.value = { title: '', summary: '', content: '', mode: 'free', max_nodes: 5 };

@@ -107,7 +107,7 @@ export const getUserFavorites = (req: AuthRequest, res: Response) => {
 
   const storyIds = favRows.map((row: any) => row.story_id);
   const placeholders = storyIds.map(() => '?').join(',');
-  const stories = queryAll(`SELECT * FROM stories WHERE id IN (${placeholders})`, storyIds) as any[];
+  const stories = queryAll(`SELECT s.*, u.username AS author_name FROM stories s LEFT JOIN users u ON s.author_id = u.id WHERE s.id IN (${placeholders})`, storyIds) as any[];
 
   res.json(stories);
 };

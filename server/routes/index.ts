@@ -22,6 +22,7 @@ router.get('/stories/search', searchStories);
 router.get('/stories/my', authenticate, getMyStories);
 router.get('/stories/:story_id/timeline', getTimeline);
 router.get('/stories/:id', getStoryById);
+router.get('/published/:id', getStoryById);
 router.put('/stories/:id', authenticate, updateStory);
 router.delete('/stories/:id', authenticate, deleteStory);
 

@@ -12,6 +12,7 @@ export interface Story {
   summary: string;
   content: string;
   author_id: number;
+  author_name?: string;
   mode: 'free' | 'selected' | 'solo' | 'team';
   max_nodes: number;
   current_nodes: number;
@@ -22,6 +23,7 @@ export interface Story {
   created_at: string;
   published_at?: string;
   nodes?: StoryNode[];
+  participants?: Participant[];
 }
 
 export interface StoryNode {
@@ -30,9 +32,16 @@ export interface StoryNode {
   parent_id?: number;
   content: string;
   author_id: number;
+  author_name?: string;
   coins: number;
   is_selected: boolean;
+  is_manual_selected?: boolean;
   created_at: string;
+}
+
+export interface Participant {
+  id: number;
+  username: string;
 }
 
 export interface InventoryItem {

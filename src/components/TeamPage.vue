@@ -77,7 +77,6 @@ const handleViewMembers = async (teamId: number) => {
 };
 
 const isMember = (teamId: number) => myTeams.value.some(t => t.id === teamId);
-const getMyRole = (teamId: number) => myTeams.value.find(t => t.id === teamId)?.role;
 
 onMounted(() => {
   fetchTeams();

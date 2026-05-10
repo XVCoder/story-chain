@@ -28,6 +28,9 @@
 - ⭐ **收藏**: 支持收藏故事
 - 🪙 **投币**: 支持对故事节点投币支持（**每人每天每节点最多5币**）
 - 👁️ **阅读量统计**: 自动记录故事阅读量
+- 👤 **节点作者信息**: 每个故事节点展示接龙者用户名和提交时间
+- 📖 **已发布故事阅读页**: 已发布故事以小说阅读风格展示，支持公开访问
+- 🔗 **分享功能**: 一键复制已发布故事的阅读链接，支持未登录用户登录后自动回跳
 
 ### 积分与道具系统
 
@@ -132,6 +135,7 @@ story-chain/
 │       ├── TeamPage.vue          # 团队管理
 │       ├── CompetitionPage.vue   # 竞赛与排行榜
 │       ├── MyStories.vue         # 我的故事
+│       ├── PublishedStory.vue    # 已发布故事阅读页
 │       └── ProfilePage.vue       # 个人中心
 │
 └── tests/                  # 测试
@@ -152,7 +156,8 @@ story-chain/
 | **故事** | GET `/api/stories`                                  | 获取故事列表（支持分页/筛选/排序） |
 | <br /> | GET `/api/stories/search`                           | 搜索故事（按标题/摘要）       |
 | <br /> | GET `/api/stories/my`                               | 获取我的故事列表           |
-| <br /> | GET `/api/stories/:id`                              | 获取故事详情             |
+| <br /> | GET `/api/stories/:id`                              | 获取故事详情（含作者名和参与者列表） |
+| <br /> | GET `/api/published/:id`                            | 获取已发布故事详情（无需登录）    |
 | <br /> | GET `/api/stories/:story_id/timeline`               | 获取主线故事拼接结果         |
 | <br /> | POST `/api/stories`                                 | 创建故事               |
 | <br /> | PUT `/api/stories/:id`                              | 更新故事               |
@@ -160,6 +165,7 @@ story-chain/
 | **节点** | GET `/api/nodes/:story_id`                          | 获取故事节点             |
 | <br /> | POST `/api/nodes`                                   | 添加接龙节点             |
 | <br /> | PUT `/api/nodes/:node_id/select`                    | 选择节点               |
+| <br /> | PUT `/api/nodes/:node_id/unselect`                  | 取消手动选择节点           |
 | <br /> | POST `/api/nodes/:story_id/auto-select`             | 自动计算主线             |
 | **互动** | POST `/api/stories/:story_id/like`                  | 点赞/取消点赞            |
 | <br /> | POST `/api/stories/:story_id/favorite`              | 收藏/取消收藏            |
@@ -229,7 +235,7 @@ npx jest
 | tests/mode.test.ts        | 游戏模式差异化逻辑（Solo/自由/团队/排行榜） | 12  |
 | tests/team.test.ts        | 团队创建/加入/查询/竞赛创建/加入        | 13  |
 
-**总计：113 个测试，8 个测试套件，全部通过**
+**总计：124 个测试，8 个测试套件，全部通过**
 
 ## 前端页面路由
 
@@ -242,10 +248,11 @@ npx jest
 | `/teams`        | 团队管理  | 创建/加入/查看成员/退出团队   | 需登录 |
 | `/competitions` | 竞赛列表  | 创建/参赛/排行榜         | 需登录 |
 | `/my-stories`   | 我的故事  | 用户创建的故事列表         | 需登录 |
+| `/read/:id`     | 已发布阅读 | 小说阅读风格、点赞/收藏/分享  | 公开  |
 
 ## 登录流程
 
-未登录用户访问任何功能页面时，会自动跳转到 `/login` 登录页面。登录页面同时支持登录和注册功能，登录成功后自动跳转到 `/home`。
+未登录用户访问需认证页面时，会自动跳转到 `/login` 登录页面，同时将目标路径保存到 localStorage。登录/注册成功后自动跳转到保存的路径（若无则跳转到 `/home`）。已发布故事的阅读页（`/read/:id`）无需登录即可访问。
 
 ## 新需求实现要点
 
@@ -285,6 +292,44 @@ npx jest
   1. 检查今日是否已签到 → 返回 "Already checked in today"
   2. 插入签到记录 + 10积分
 - 前端: Header 下拉菜单中的「📅 签到」按钮
+
+### 4. 节点作者信息展示
+
+**需求**: 在每个故事节点展示接龙者的信息以及节点的提交时间。
+
+**实现**:
+- 后端所有涉及 `story_nodes` 的查询均改为 `LEFT JOIN users u ON n.author_id = u.id`，返回 `u.username AS author_name`
+- 涉及接口：`getNodesByStory`、`getStoryById`、`getTimeline`、`getStories`、`getMyStories`、`searchStories`、`getUserFavorites`
+- 前端 `StoryNode` 类型新增 `author_name?: string` 和 `is_manual_selected?: boolean` 字段
+- `TreeNode.vue` 的 `NodeData` 接口增加 `author_name`、`author_id`、`created_at`，模板中显示作者名（绿色）和提交时间
+
+### 5. 已发布故事阅读页
+
+**需求**: 已发布的故事详情页类似小说阅读页面，展示最终主线故事、发起人、参与人、时间、收藏/点赞/分享按钮。
+
+**实现**:
+- 新增 `GET /api/published/:id` 公开路由（无需认证），复用 `getStoryById` 控制器
+- `getStoryById` 增加 `participants` 查询：`SELECT DISTINCT u.id, u.username FROM story_nodes n INNER JOIN users u ON n.author_id = u.id WHERE n.story_id = ?`
+- 前端新增 `/read/:id` 路由（无需认证），对应 `PublishedStory.vue` 组件
+- `PublishedStory.vue` 设计为小说阅读风格：
+  - 仿纸张背景（`#f5f0e8` 底色 + `#fffef9` 内容区）
+  - 衬线字体（Noto Serif SC / STSong / SimSun）
+  - 段落首行缩进 2em，行高 2.2
+  - 元信息区展示发起人、参与人、发起时间、发布时间、参与段落数
+  - 分割线装饰（✦ 和 — 全文完 —）
+  - 底部操作栏：点赞（👍）、收藏（⭐）、分享（🔗）按钮
+- `StoryCard.vue` 已发布故事点击跳转到 `/read/:id`，按钮文案改为「阅读」
+- `StoryDetail.vue` 已发布故事增加「🔗 分享」按钮
+
+### 6. 分享与未登录回跳
+
+**需求**: 分享已发布故事的详情页地址，未登录用户登录后自动回跳到分享页面。
+
+**实现**:
+- 分享按钮调用 `navigator.clipboard.writeText(url)` 复制 `/read/:id` 链接到剪贴板
+- 路由守卫：访问需认证页面时，将目标路径保存到 `localStorage('redirectAfterLogin')`
+- `LoginPage.vue` 登录/注册成功后检查 `redirectAfterLogin`，存在则跳转到该路径并清除存储
+- `PublishedStory.vue` 中点赞/收藏操作在未登录时，将 `/read/:id` 保存到 `redirectAfterLogin` 并跳转登录页
 
 ## License
 

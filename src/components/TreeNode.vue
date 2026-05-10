@@ -4,13 +4,16 @@ interface NodeData {
   id: number;
   parent_id?: number;
   content: string;
+  author_id: number;
+  author_name?: string;
   coins: number;
   is_selected: boolean;
   is_manual_selected: boolean;
+  created_at: string;
   children: NodeData[];
 }
 
-const props = defineProps<{
+defineProps<{
   node: NodeData;
   depth: number;
   canAddNode: boolean;
@@ -24,6 +27,13 @@ const emit = defineEmits<{
   select: [nodeId: number];
   unselect: [nodeId: number];
 }>();
+
+const formatTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 </script>
 
 <template>
@@ -32,6 +42,8 @@ const emit = defineEmits<{
       <div class="node-header">
         <span v-if="depth === 0 && rootIndex !== undefined" class="node-number">第 {{ rootIndex + 1 }} 段</span>
         <span v-else class="node-number">接龙</span>
+        <span class="node-author">{{ node.author_name || '匿名' }}</span>
+        <span class="node-time">{{ formatTime(node.created_at) }}</span>
         <span class="node-coins">💰 {{ node.coins }}</span>
         <ElTag v-if="node.is_selected" type="success" size="small">已选中</ElTag>
         <span v-if="node.is_manual_selected" class="manual-badge">手动</span>
@@ -94,6 +106,16 @@ const emit = defineEmits<{
 .node-number {
   font-weight: bold;
   color: #409eff;
+}
+
+.node-author {
+  color: #67c23a;
+  font-size: 13px;
+}
+
+.node-time {
+  color: #909399;
+  font-size: 12px;
 }
 
 .node-coins {
