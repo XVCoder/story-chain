@@ -51,5 +51,5 @@
 - [x] 3.2 vue-tsc 类型检查 — 通过
 - [x] 3.3 vite build 前端构建 — 成功
 - [x] 3.4 server:build 后端编译 — 成功
-- [ ] 3.5 Git 提交
-- [ ] 3.6 更新 README.md
+- [x] 3.5 Git 提交 — c2e3d56
+- [x] 3.6 更新 README.md — 已追加第11节 Docker 容器化部署实现要点
