@@ -53,8 +53,8 @@ describe('Game Mode Logic', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ story_id: soloStoryId, content: 'Should fail...' });
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Solo mode does not accept new nodes');
+      expect(response.status).toBe(403);
+      expect(response.body.message).toBe('Solo模式不接受新节点');
     });
 
     it('should reject node selection in solo mode', async () => {
@@ -66,7 +66,7 @@ describe('Game Mode Logic', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Solo mode does not require node selection');
+      expect(response.body.message).toBe('Solo模式不需要选择节点');
     });
   });
 
@@ -117,7 +117,7 @@ describe('Game Mode Logic', () => {
         .send({ title: 'Mode Change Test', summary: 'Test', status: 'draft', mode: 'solo' });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Story mode cannot be changed after creation');
+      expect(response.body.message).toBe('故事模式创建后不可更改');
     });
   });
 

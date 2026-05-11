@@ -41,7 +41,7 @@ describe('Node API', () => {
     const storyResponse = await request(app)
       .post('/api/stories')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Node Select Story', summary: 'Test for node selection', content: 'Beginning...', mode: 'free', max_nodes: 2 });
+      .send({ title: 'Node Select Story', summary: 'Test for node selection', content: 'Beginning...', mode: 'free', max_nodes: 4 });
     storyId = storyResponse.body.id;
 
     await request(app)
@@ -101,7 +101,7 @@ describe('Node API', () => {
       .set('Authorization', `Bearer ${otherToken}`);
 
     expect(response.status).toBe(403);
-    expect(response.body.message).toBe('Only story author can select nodes');
+    expect(response.body.message).toBe('只有故事发起者才能选择节点');
   });
 
   it('should add child under branch A and reach max nodes', async () => {
@@ -120,7 +120,7 @@ describe('Node API', () => {
       .send({ story_id: storyId, content: 'Should fail...' });
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe('Story has reached maximum nodes');
+    expect(response.body.message).toBe('该故事已达到最大节点数');
   });
 
   it('should manually select branch A by author, overriding coin-based selection', async () => {
@@ -129,7 +129,7 @@ describe('Node API', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Node selected successfully');
+    expect(response.body.message).toBe('节点选择成功');
   });
 
   it('should mark branch A as selected and is_manual_selected', async () => {

@@ -11,15 +11,15 @@ export const register = (req: Request, res: Response) => {
   const { username, password, email } = req.body;
   
   if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required' });
+    return res.status(400).json({ message: '用户名和密码为必填项' });
   }
 
   if (username.length < 3) {
-    return res.status(400).json({ message: 'Username must be at least 3 characters' });
+    return res.status(400).json({ message: '用户名至少需要3个字符' });
   }
 
   if (password.length < 6) {
-    return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    return res.status(400).json({ message: '密码至少需要6个字符' });
   }
 
   try {
@@ -29,7 +29,7 @@ export const register = (req: Request, res: Response) => {
     const user = queryOne('SELECT id, username, email, points FROM users WHERE username = ?', [username]);
     res.status(201).json(user);
   } catch (error) {
-    return res.status(400).json({ message: 'Username or email already exists' });
+    return res.status(400).json({ message: '用户名或邮箱已存在' });
   }
 };
 
@@ -38,12 +38,12 @@ export const login = (req: Request, res: Response) => {
 
   const user = queryOne('SELECT * FROM users WHERE username = ?', [username]);
   if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+    return res.status(401).json({ message: '用户名或密码错误' });
   }
 
   const isMatch = bcrypt.compareSync(password, user.password);
   if (!isMatch) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+    return res.status(401).json({ message: '用户名或密码错误' });
   }
 
   const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
@@ -56,7 +56,7 @@ export const getUserProfile = (req: AuthRequest, res: Response) => {
   const user = queryOne('SELECT id, username, email, points, created_at FROM users WHERE id = ?', [userId]);
   
   if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+    return res.status(404).json({ message: '用户不存在' });
   }
   
   res.json(user);
@@ -68,9 +68,9 @@ export const updateUserProfile = (req: AuthRequest, res: Response) => {
 
   try {
     execute('UPDATE users SET email = ? WHERE id = ?', [email, userId]);
-    res.json({ message: 'Profile updated successfully' });
+    res.json({ message: '个人资料更新成功' });
   } catch (error) {
-    return res.status(400).json({ message: 'Error updating profile' });
+    return res.status(400).json({ message: '更新个人资料失败' });
   }
 };
 
@@ -78,7 +78,7 @@ export const checkIn = (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
 
   if (!userId) {
-    return res.status(401).json({ message: 'Authentication required' });
+    return res.status(401).json({ message: '请先登录' });
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -87,16 +87,16 @@ export const checkIn = (req: AuthRequest, res: Response) => {
     const existing = queryOne('SELECT id FROM check_ins WHERE user_id = ? AND check_date = ?', [userId, today]);
 
     if (existing) {
-      return res.status(400).json({ message: 'Already checked in today' });
+      return res.status(400).json({ message: '今日已签到' });
     }
 
     const pointsAwarded = 10;
     execute('INSERT INTO check_ins (user_id, check_date, points_awarded) VALUES (?, ?, ?)', [userId, today, pointsAwarded]);
     execute('UPDATE users SET points = points + ? WHERE id = ?', [pointsAwarded, userId]);
 
-    res.json({ message: 'Check-in successful', points_awarded: pointsAwarded });
+    res.json({ message: '签到成功', points_awarded: pointsAwarded });
   } catch (error) {
-    return res.status(500).json({ message: 'Check-in failed due to server error' });
+    return res.status(500).json({ message: '签到失败，请稍后重试' });
   }
 };
 

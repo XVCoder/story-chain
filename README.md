@@ -208,6 +208,7 @@ story-chain/
 | Phase 4: 前端功能完善        | ✅ 已完成 | 2026-04-29 |
 | Phase 5: 积分与体验优化       | ✅ 已完成 | 2026-04-29 |
 | Phase 6: 集成测试与验收       | ✅ 已完成 | 2026-04-29 |
+| Round 2: 中文化 + 自定义节点数 | ✅ 已完成 | 2026-05-10 |
 
 ## 项目完成状态
 
@@ -330,6 +331,48 @@ npx jest
 - 路由守卫：访问需认证页面时，将目标路径保存到 `localStorage('redirectAfterLogin')`
 - `LoginPage.vue` 登录/注册成功后检查 `redirectAfterLogin`，存在则跳转到该路径并清除存储
 - `PublishedStory.vue` 中点赞/收藏操作在未登录时，将 `/read/:id` 保存到 `redirectAfterLogin` 并跳转登录页
+
+### 7. 全面中文化
+
+**需求**: 由于故事接龙游戏目前仅面向中文用户，所有提示信息都需要用中文。
+
+**实现**:
+- 后端 8 个文件共 85+ 条消息全部翻译为中文：
+  - `auth.ts`: 认证中间件提示（未提供认证令牌、无效的认证令牌）
+  - `index.ts`: 服务器内部错误
+  - `userController.ts`: 注册/登录/签到/资料更新等提示
+  - `storyController.ts`: 故事CRUD相关提示
+  - `nodeController.ts`: 节点添加/选择/最大节点数等提示
+  - `interactionController.ts`: 点赞/收藏/投币等提示
+  - `teamController.ts`: 团队创建/加入/竞赛等提示
+  - `inventoryController.ts`: 道具购买/使用等提示
+  - `swagger.ts`: API文档标题和描述
+- 前端 Element Plus 消息提示全部使用中文
+- 所有 124 个测试断言更新为中文消息匹配
+
+### 8. 主线故事拼接无连接符
+
+**需求**: 被选中的接龙节点在拼接成主线故事时，中间不要加任何字符连接。
+
+**实现**:
+- `nodeController.ts` 的 `getTimeline` 函数：`timelineNodes.map(n => n.content).join('')`
+- `PublishedStory.vue` 已发布阅读页：直接显示 `timeline.full_text`，不再按换行符分割段落
+
+### 9. 创建故事自定义节点数
+
+**需求**: 创建故事时，最大节点数增加"自定义"选项，用户可以手动指定节点数，最少为3个节点。
+
+**实现**:
+- 前端 `StoryList.vue`：
+  - 新增 `maxNodesMode`（'preset' | 'custom'）和 `customMaxNodes`（默认3）状态
+  - 最大节点数选择器旁增加「自定义」按钮
+  - 选择自定义模式后显示 `ElInputNumber`（min=3, max=9999）
+  - 创建前校验：自定义值必须为 ≥ 3 的整数
+- 后端 `storyController.ts`：
+  - Solo 模式自动设置 `max_nodes = 1`
+- 后端 `nodeController.ts`：
+  - 添加节点达到 `max_nodes` 上限时，自动将故事状态设为 `completed`
+  - 优化 `autoSelectMainLineInternal` 算法：使用"规范根节点"策略，正确处理根级兄弟节点遍历，避免无限循环
 
 ## License
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElTabs, ElTabPane, ElSelect, ElOption, ElMessage, ElInput, ElButton, ElForm, ElFormItem } from 'element-plus';
+import { ElTabs, ElTabPane, ElSelect, ElOption, ElMessage, ElInput, ElInputNumber, ElButton, ElForm, ElFormItem } from 'element-plus';
 import { ElDialog } from 'element-plus';
 import type { Story } from '../types';
 import StoryCard from './StoryCard.vue';
@@ -38,6 +38,8 @@ const createForm = ref({
   mode: 'free' as string,
   max_nodes: 5,
 });
+const maxNodesMode = ref<'preset' | 'custom'>('preset');
+const customMaxNodes = ref(3);
 const creating = ref(false);
 
 const modes = [
@@ -52,12 +54,21 @@ const handleCreateStory = async () => {
     ElMessage.warning('请填写完整信息');
     return;
   }
+  if (maxNodesMode.value === 'custom') {
+    if (!Number.isInteger(customMaxNodes.value) || customMaxNodes.value < 3) {
+      ElMessage.warning('自定义节点数至少为3');
+      return;
+    }
+    createForm.value.max_nodes = customMaxNodes.value;
+  }
   creating.value = true;
   try {
     await storyAPI.create(createForm.value);
     ElMessage.success('故事创建成功');
     showCreateDialog.value = false;
     createForm.value = { title: '', summary: '', content: '', mode: 'free', max_nodes: 5 };
+    maxNodesMode.value = 'preset';
+    customMaxNodes.value = 3;
     await fetchStories();
     activeTab.value = 'ongoing';
   } catch {
@@ -205,10 +216,27 @@ onMounted(() => {
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="最大节点数">
-          <ElSelect v-model="createForm.max_nodes">
-            <ElOption label="无限制" :value="0" />
-            <ElOption v-for="n in [3, 5, 7, 10]" :key="n" :label="String(n)" :value="n" />
-          </ElSelect>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <ElSelect v-model="createForm.max_nodes" @change="maxNodesMode = 'preset'" style="width: 160px;">
+              <ElOption label="无限制" :value="0" />
+              <ElOption v-for="n in [3, 5, 7, 10]" :key="n" :label="String(n)" :value="n" />
+            </ElSelect>
+            <ElButton
+              :type="maxNodesMode === 'custom' ? 'primary' : 'default'"
+              size="small"
+              @click="maxNodesMode = 'custom'"
+            >自定义</ElButton>
+            <template v-if="maxNodesMode === 'custom'">
+              <ElInputNumber
+                v-model="customMaxNodes"
+                :min="3"
+                :max="9999"
+                size="small"
+                style="width: 120px;"
+              />
+              <span style="font-size: 12px; color: #909399;">最少3个</span>
+            </template>
+          </div>
         </ElFormItem>
       </ElForm>
       <template #footer>

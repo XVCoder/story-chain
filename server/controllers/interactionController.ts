@@ -12,11 +12,11 @@ export const likeStory = (req: AuthRequest, res: Response) => {
   if (like) {
     execute('DELETE FROM likes WHERE user_id = ? AND story_id = ?', [user_id, story_id]);
     execute('UPDATE stories SET likes = likes - 1 WHERE id = ?', [story_id]);
-    res.json({ message: 'Like removed' });
+    res.json({ message: '已取消点赞' });
   } else {
     execute('INSERT INTO likes (user_id, story_id) VALUES (?, ?)', [user_id, story_id]);
     execute('UPDATE stories SET likes = likes + 1 WHERE id = ?', [story_id]);
-    res.json({ message: 'Like added' });
+    res.json({ message: '点赞成功' });
   }
 };
 
@@ -29,11 +29,11 @@ export const favoriteStory = (req: AuthRequest, res: Response) => {
   if (favorite) {
     execute('DELETE FROM favorites WHERE user_id = ? AND story_id = ?', [user_id, story_id]);
     execute('UPDATE stories SET favorites = favorites - 1 WHERE id = ?', [story_id]);
-    res.json({ message: 'Favorite removed' });
+    res.json({ message: '已取消收藏' });
   } else {
     execute('INSERT INTO favorites (user_id, story_id) VALUES (?, ?)', [user_id, story_id]);
     execute('UPDATE stories SET favorites = favorites + 1 WHERE id = ?', [story_id]);
-    res.json({ message: 'Favorite added' });
+    res.json({ message: '收藏成功' });
   }
 };
 
@@ -43,34 +43,34 @@ export const coinNode = (req: AuthRequest, res: Response) => {
   const { amount = 1 } = req.body;
 
   if (!Number.isInteger(amount) || amount <= 0) {
-    return res.status(400).json({ message: 'Amount must be a positive integer' });
+    return res.status(400).json({ message: '投币数量必须为正整数' });
   }
 
   if (amount > 5) {
-    return res.status(400).json({ message: 'Cannot coin more than 5 at once' });
+    return res.status(400).json({ message: '单次投币不能超过5个' });
   }
 
   const node = queryOne('SELECT id, story_id FROM story_nodes WHERE id = ?', [node_id]);
 
   if (!node) {
-    return res.status(404).json({ message: 'Node not found' });
+    return res.status(404).json({ message: '节点不存在' });
   }
 
   const user = queryOne('SELECT points FROM users WHERE id = ?', [user_id]);
-  
+
   if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+    return res.status(404).json({ message: '用户不存在' });
   }
-  
+
   if (user.points < amount) {
-    return res.status(400).json({ message: 'Insufficient points' });
+    return res.status(400).json({ message: '积分不足' });
   }
 
   const today = new Date().toISOString().split('T')[0];
   const dailyCoin = queryOne('SELECT daily_amount FROM daily_coins WHERE user_id = ? AND node_id = ? AND coin_date = ?', [user_id, node_id, today]);
 
   if (dailyCoin && dailyCoin.daily_amount + amount > 5) {
-    return res.status(400).json({ message: 'Daily coin limit reached for this node (max 5)' });
+    return res.status(400).json({ message: '该节点今日投币已达上限（最多5个）' });
   }
 
   execute('UPDATE users SET points = points - ? WHERE id = ?', [amount, user_id]);
@@ -93,7 +93,7 @@ export const coinNode = (req: AuthRequest, res: Response) => {
 
   const selectedCount = autoSelectMainLineInternal(node.story_id);
 
-  res.json({ message: 'Coins added', timeline_nodes: selectedCount });
+  res.json({ message: '投币成功', timeline_nodes: selectedCount });
 };
 
 export const getUserFavorites = (req: AuthRequest, res: Response) => {

@@ -67,7 +67,7 @@ describe('Interaction API', () => {
         .send({ amount: 1 });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Coins added');
+      expect(response.body.message).toBe('投币成功');
     });
 
     it('should fail to coin without authentication', async () => {
@@ -87,7 +87,7 @@ describe('Interaction API', () => {
         .send({ amount: 1 });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Insufficient points');
+      expect(response.body.message).toBe('积分不足');
 
       execute('UPDATE users SET points = 100 WHERE id = ?', [otherUserId]);
     });
@@ -99,7 +99,7 @@ describe('Interaction API', () => {
         .send({ amount: -1 });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Amount must be a positive integer');
+      expect(response.body.message).toBe('投币数量必须为正整数');
     });
 
     it('should accumulate coins on repeated coins', async () => {
@@ -121,7 +121,7 @@ describe('Interaction API', () => {
         .set('Authorization', `Bearer ${otherToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Like added');
+      expect(response.body.message).toBe('点赞成功');
     });
 
     it('should toggle like (remove)', async () => {
@@ -130,7 +130,7 @@ describe('Interaction API', () => {
         .set('Authorization', `Bearer ${otherToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Like removed');
+      expect(response.body.message).toBe('已取消点赞');
     });
   });
 
@@ -141,7 +141,7 @@ describe('Interaction API', () => {
         .set('Authorization', `Bearer ${otherToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Favorite added');
+      expect(response.body.message).toBe('收藏成功');
     });
 
     it('should toggle favorite (remove)', async () => {
@@ -150,7 +150,7 @@ describe('Interaction API', () => {
         .set('Authorization', `Bearer ${otherToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Favorite removed');
+      expect(response.body.message).toBe('已取消收藏');
     });
 
     it('should list user favorites', async () => {

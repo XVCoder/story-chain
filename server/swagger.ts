@@ -4,7 +4,7 @@ import type { Express } from 'express';
 const swaggerSpec = {
   openapi: '3.0.0',
   info: {
-    title: 'Story Chain API',
+    title: '故事接龙 API',
     version: '1.0.0',
     description: '故事接龙游戏 API 文档',
     contact: {
@@ -681,7 +681,7 @@ export const setupSwagger = (app: Express): void => {
   });
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     explorer: true,
-    customSiteTitle: 'Story Chain API Docs'
+    customSiteTitle: '故事接龙 API 文档'
   }));
 };
 

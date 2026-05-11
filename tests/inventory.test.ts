@@ -40,7 +40,7 @@ describe('Inventory API', () => {
         .send({ item_type: 'invalid_item', quantity: 1 });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Invalid item type');
+      expect(response.body.message).toBe('无效的道具类型');
     });
 
     it('should fail with insufficient points', async () => {
@@ -50,7 +50,7 @@ describe('Inventory API', () => {
         .send({ item_type: 'ai_polish', quantity: 2 });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Insufficient points');
+      expect(response.body.message).toBe('积分不足');
     });
   });
 
@@ -79,7 +79,7 @@ describe('Inventory API', () => {
         .send({ item_type: 'ai_polish', story_id: storyId });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Item not available');
+      expect(response.body.message).toBe('道具不足');
     });
   });
 });

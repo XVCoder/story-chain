@@ -13,24 +13,25 @@ describe('Team API', () => {
   let leaderToken: string;
   let memberToken: string;
   let teamId: number;
+  const ts = Date.now();
 
   beforeAll(async () => {
     await initDatabase();
 
     await request(app)
       .post('/api/users/register')
-      .send({ username: 'teamleader', password: 'testpass' });
+      .send({ username: `teamleader_${ts}`, password: 'testpass' });
     const leaderLogin = await request(app)
       .post('/api/users/login')
-      .send({ username: 'teamleader', password: 'testpass' });
+      .send({ username: `teamleader_${ts}`, password: 'testpass' });
     leaderToken = leaderLogin.body.token;
 
     await request(app)
       .post('/api/users/register')
-      .send({ username: 'teammember', password: 'testpass' });
+      .send({ username: `teammember_${ts}`, password: 'testpass' });
     const memberLogin = await request(app)
       .post('/api/users/login')
-      .send({ username: 'teammember', password: 'testpass' });
+      .send({ username: `teammember_${ts}`, password: 'testpass' });
     memberToken = memberLogin.body.token;
   });
 
@@ -39,11 +40,11 @@ describe('Team API', () => {
       const response = await request(app)
         .post('/api/teams')
         .set('Authorization', `Bearer ${leaderToken}`)
-        .send({ name: 'Test Team' });
+        .send({ name: `Test Team ${ts}` });
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
-      expect(response.body.name).toBe('Test Team');
+      expect(response.body.name).toBe(`Test Team ${ts}`);
       teamId = response.body.id;
     });
 
@@ -51,7 +52,7 @@ describe('Team API', () => {
       const response = await request(app)
         .post('/api/teams')
         .set('Authorization', `Bearer ${leaderToken}`)
-        .send({ name: 'Test Team' });
+        .send({ name: `Test Team ${ts}` });
 
       expect(response.status).toBe(400);
     });
@@ -72,7 +73,7 @@ describe('Team API', () => {
         .set('Authorization', `Bearer ${memberToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Joined team successfully');
+      expect(response.body.message).toBe('成功加入团队');
     });
 
     it('should fail to join already joined team', async () => {
@@ -117,22 +118,23 @@ describe('Competition API', () => {
   let leaderToken: string;
   let teamId: number;
   let competitionId: number;
+  const ts2 = Date.now();
 
   beforeAll(async () => {
     await initDatabase();
 
     await request(app)
       .post('/api/users/register')
-      .send({ username: 'compleader', password: 'testpass' });
+      .send({ username: `compleader_${ts2}`, password: 'testpass' });
     const leaderLogin = await request(app)
       .post('/api/users/login')
-      .send({ username: 'compleader', password: 'testpass' });
+      .send({ username: `compleader_${ts2}`, password: 'testpass' });
     leaderToken = leaderLogin.body.token;
 
     const teamResponse = await request(app)
       .post('/api/teams')
       .set('Authorization', `Bearer ${leaderToken}`)
-      .send({ name: 'Competition Team' });
+      .send({ name: `Competition Team ${ts2}` });
     teamId = teamResponse.body.id;
   });
 
@@ -141,7 +143,7 @@ describe('Competition API', () => {
       const response = await request(app)
         .post('/api/competitions')
         .set('Authorization', `Bearer ${leaderToken}`)
-        .send({ title: 'Test Competition', description: 'A test competition' });
+        .send({ title: `Test Competition ${ts2}`, description: 'A test competition' });
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
@@ -161,10 +163,10 @@ describe('Competition API', () => {
     it('should fail for non-leader to join competition', async () => {
       await request(app)
         .post('/api/users/register')
-        .send({ username: 'regularmember', password: 'testpass' });
+        .send({ username: `regularmember_${ts2}`, password: 'testpass' });
       const memberLogin = await request(app)
         .post('/api/users/login')
-        .send({ username: 'regularmember', password: 'testpass' });
+        .send({ username: `regularmember_${ts2}`, password: 'testpass' });
 
       const response = await request(app)
         .post('/api/competitions/join')
@@ -181,7 +183,7 @@ describe('Competition API', () => {
         .send({ competition_id: competitionId, team_id: teamId });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Team joined competition successfully');
+      expect(response.body.message).toBe('团队已成功参加竞赛');
     });
   });
 

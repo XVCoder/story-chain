@@ -1,58 +1,66 @@
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { queryAll, queryOne, execute } from '../db/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 export const createStory = (req: AuthRequest, res: Response) => {
-  const { title, summary, content, mode, max_nodes, team_id, competition_id } = req.body;
+  const { title, summary, content, mode = 'free', max_nodes = 5, team_id, competition_id } = req.body;
   const author_id = req.user?.id;
 
-  if (!title || typeof title !== 'string' || !title.trim()) {
-    return res.status(400).json({ message: 'Title is required' });
-  }
-  if (!summary || typeof summary !== 'string' || !summary.trim()) {
-    return res.status(400).json({ message: 'Summary is required' });
-  }
-  if (!content || typeof content !== 'string' || !content.trim()) {
-    return res.status(400).json({ message: 'Content is required' });
+  if (!title) {
+    return res.status(400).json({ message: '标题为必填项' });
   }
 
-  const resolvedMode = mode || 'free';
-  let resolvedMaxNodes = max_nodes !== undefined ? max_nodes : 5;
-  let resolvedTeamId: number | null = null;
-  let resolvedCompetitionId: number | null = null;
-
-  if (resolvedMode === 'solo') {
-    resolvedMaxNodes = 1;
+  if (!summary) {
+    return res.status(400).json({ message: '简介为必填项' });
   }
 
-  if (resolvedMode === 'team') {
-    if (!team_id) {
-      return res.status(400).json({ message: 'Team mode requires a team_id' });
-    }
+  if (!content) {
+    return res.status(400).json({ message: '内容为必填项' });
+  }
+
+  const finalMaxNodes = mode === 'solo' ? 1 : max_nodes;
+
+  if (mode === 'team' && !team_id) {
+    return res.status(400).json({ message: '团队模式需要指定团队' });
+  }
+
+  if (mode === 'team' && team_id) {
     const member = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [team_id, author_id, 'leader']);
     if (!member) {
-      return res.status(403).json({ message: 'Only team leader can create team stories' });
+      return res.status(403).json({ message: '只有队长才能创建团队故事' });
     }
-    resolvedTeamId = team_id;
-    resolvedCompetitionId = competition_id || null;
   }
 
   try {
-    execute('INSERT INTO stories (title, summary, content, author_id, mode, max_nodes, team_id, competition_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [title, summary, content, author_id, resolvedMode, resolvedMaxNodes, resolvedTeamId, resolvedCompetitionId, 'ongoing']);
-    const story = queryOne('SELECT id FROM stories WHERE title = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [title, author_id]);
-    if (!story) throw new Error('Story not created');
+    let storyId: number;
+    if (mode === 'team' && competition_id) {
+      execute('INSERT INTO stories (title, summary, content, author_id, mode, max_nodes, status, team_id, competition_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [title, summary, content, author_id, mode, finalMaxNodes, 'ongoing', team_id, competition_id]);
+      const created = queryOne('SELECT id FROM stories WHERE title = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [title, author_id]);
+      storyId = created.id;
+    } else if (mode === 'team' && team_id) {
+      execute('INSERT INTO stories (title, summary, content, author_id, mode, max_nodes, status, team_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [title, summary, content, author_id, mode, finalMaxNodes, 'ongoing', team_id]);
+      const created = queryOne('SELECT id FROM stories WHERE title = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [title, author_id]);
+      storyId = created.id;
+    } else {
+      execute('INSERT INTO stories (title, summary, content, author_id, mode, max_nodes, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [title, summary, content, author_id, mode, finalMaxNodes, 'ongoing']);
+      const created = queryOne('SELECT id FROM stories WHERE title = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [title, author_id]);
+      storyId = created.id;
+    }
 
-    execute('INSERT INTO story_nodes (story_id, content, author_id) VALUES (?, ?, ?)', [story.id, content, author_id]);
+    if (!storyId) {
+      throw new Error('创建故事失败');
+    }
 
-    res.status(201).json({ id: story.id });
+    execute('INSERT INTO story_nodes (story_id, content, author_id, is_selected) VALUES (?, ?, ?, ?)', [storyId, content, author_id, true]);
+    const story = queryOne('SELECT * FROM stories WHERE id = ?', [storyId]);
+    res.status(201).json(story);
   } catch (error: any) {
-    const errMsg = error?.message || error?.toString() || 'Unknown error';
-    return res.status(400).json({ message: `Error creating story: ${errMsg}` });
+    const errMsg = error?.message || error?.toString() || '未知错误';
+    res.status(500).json({ message: `创建故事失败: ${errMsg}` });
   }
 };
 
-export const getStories = (req: Request, res: Response) => {
+export const getStories = (req: AuthRequest, res: Response) => {
   const { status, mode, sort_by, page = 1, limit = 10 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
@@ -83,7 +91,7 @@ export const getStories = (req: Request, res: Response) => {
   res.json(stories);
 };
 
-export const getStoryById = (req: Request, res: Response) => {
+export const getStoryById = (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   const story = queryOne(`
@@ -94,7 +102,7 @@ export const getStoryById = (req: Request, res: Response) => {
   `, [id]);
   
   if (!story) {
-    return res.status(404).json({ message: 'Story not found' });
+    return res.status(404).json({ message: '故事不存在' });
   }
 
   execute('UPDATE stories SET views = views + 1 WHERE id = ?', [id]);
@@ -121,69 +129,79 @@ export const getStoryById = (req: Request, res: Response) => {
 
 export const updateStory = (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+  const userId = req.user?.id;
   const { title, summary, status, mode } = req.body;
-  const author_id = req.user?.id;
 
-  if (mode) {
-    return res.status(400).json({ message: 'Story mode cannot be changed after creation' });
-  }
-
-  const story = queryOne('SELECT * FROM stories WHERE id = ? AND author_id = ?', [id, author_id]);
-
+  const story = queryOne('SELECT * FROM stories WHERE id = ?', [id]);
+  
   if (!story) {
-    return res.status(404).json({ message: 'Story not found or not authorized' });
+    return res.status(404).json({ message: '故事不存在' });
   }
 
-  try {
-    const updates: string[] = [];
-    const params: any[] = [];
+  if (story.author_id !== userId) {
+    return res.status(403).json({ message: '无权操作此故事' });
+  }
 
-    if (title !== undefined) {
-      updates.push('title = ?');
-      params.push(title);
-    }
-    if (summary !== undefined) {
-      updates.push('summary = ?');
-      params.push(summary);
-    }
-    if (status !== undefined) {
-      updates.push('status = ?');
-      params.push(status);
-      if (status === 'published') {
-        updates.push('published_at = ?');
-        params.push(new Date().toISOString());
-      }
-    } else {
+  if (mode && mode !== story.mode) {
+    return res.status(400).json({ message: '故事模式创建后不可更改' });
+  }
+
+  const teamCheck = queryOne('SELECT team_id FROM stories WHERE id = ?', [id]);
+  if (!teamCheck) {
+    return res.status(404).json({ message: '故事不存在或无权操作' });
+  }
+
+  const updates: string[] = [];
+  const params: any[] = [];
+
+  if (title) {
+    updates.push('title = ?');
+    params.push(title);
+  }
+  if (summary) {
+    updates.push('summary = ?');
+    params.push(summary);
+  }
+  if (status) {
+    updates.push('status = ?');
+    params.push(status);
+    if (status === 'published') {
       updates.push('published_at = ?');
-      params.push(story.published_at || null);
+      params.push(new Date().toISOString());
     }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ message: 'No fields to update' });
-    }
-
-    params.push(id);
-    execute(`UPDATE stories SET ${updates.join(', ')} WHERE id = ?`, params);
-    res.json({ message: 'Story updated successfully' });
-  } catch (error) {
-    return res.status(400).json({ message: 'Error updating story' });
   }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ message: '没有需要更新的字段' });
+  }
+
+  params.push(id);
+  execute(`UPDATE stories SET ${updates.join(', ')} WHERE id = ?`, params);
+
+  res.json({ message: '故事更新成功' });
 };
 
 export const deleteStory = (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const author_id = req.user?.id;
+  const userId = req.user?.id;
 
-  const story = queryOne('SELECT id FROM stories WHERE id = ? AND author_id = ?', [id, author_id]);
+  const story = queryOne('SELECT * FROM stories WHERE id = ?', [id]);
 
   if (!story) {
-    return res.status(404).json({ message: 'Story not found or not authorized' });
+    return res.status(404).json({ message: '故事不存在或无权操作' });
+  }
+
+  if (story.author_id !== userId) {
+    return res.status(403).json({ message: '无权删除此故事' });
   }
 
   execute('DELETE FROM story_nodes WHERE story_id = ?', [id]);
+  execute('DELETE FROM likes WHERE story_id = ?', [id]);
+  execute('DELETE FROM favorites WHERE story_id = ?', [id]);
+  execute('DELETE FROM coins WHERE node_id IN (SELECT id FROM story_nodes WHERE story_id = ?)', [id]);
   execute('DELETE FROM stories WHERE id = ?', [id]);
 
-  res.json({ message: 'Story deleted successfully' });
+  res.json({ message: '故事删除成功' });
 };
 
 export const getMyStories = (req: AuthRequest, res: Response) => {
@@ -200,7 +218,7 @@ export const getMyStories = (req: AuthRequest, res: Response) => {
   res.json(stories);
 };
 
-export const searchStories = (req: Request, res: Response) => {
+export const searchStories = (req: AuthRequest, res: Response) => {
   const { q } = req.query;
 
   if (!q) {

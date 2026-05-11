@@ -14,7 +14,7 @@ app.use('/api', router);
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({ message: 'Internal server error' });
+  res.status(500).json({ message: '服务器内部错误' });
 });
 
 setupSwagger(app);

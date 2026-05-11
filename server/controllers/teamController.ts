@@ -9,13 +9,13 @@ export const createTeam = (req: AuthRequest, res: Response) => {
   try {
     execute('INSERT INTO teams (name) VALUES (?)', [name]);
     const team = queryOne('SELECT id FROM teams WHERE name = ?', [name]);
-    if (!team) throw new Error('Team not created');
+    if (!team) throw new Error('团队创建失败');
 
     execute('INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)', [team.id, user_id, 'leader']);
 
     res.status(201).json({ id: team.id, name });
   } catch (error) {
-    return res.status(400).json({ message: 'Team name already exists' });
+    return res.status(400).json({ message: '团队名称已存在' });
   }
 };
 
@@ -26,14 +26,14 @@ export const joinTeam = (req: AuthRequest, res: Response) => {
   const team = queryOne('SELECT id FROM teams WHERE id = ?', [team_id]);
   
   if (!team) {
-    return res.status(404).json({ message: 'Team not found' });
+    return res.status(404).json({ message: '团队不存在' });
   }
 
   try {
     execute('INSERT INTO team_members (team_id, user_id) VALUES (?, ?)', [team_id, user_id]);
-    res.json({ message: 'Joined team successfully' });
+    res.json({ message: '成功加入团队' });
   } catch (error) {
-    return res.status(400).json({ message: 'Already a member of this team' });
+    return res.status(400).json({ message: '已经是该团队成员' });
   }
 };
 
@@ -57,12 +57,12 @@ export const createCompetition = (req: AuthRequest, res: Response) => {
     execute('INSERT INTO competitions (title, description, end_time) VALUES (?, ?, ?)', [title, description || null, end_time || null]);
     const competition = queryOne('SELECT id FROM competitions WHERE title = ? ORDER BY id DESC LIMIT 1', [title]);
     if (!competition) {
-      return res.status(500).json({ message: 'Competition created but not found', title });
+      return res.status(500).json({ message: '竞赛已创建但未找到', title });
     }
     res.status(201).json({ id: competition.id, title });
   } catch (error: any) {
-    const errMsg = error?.message || error?.toString() || 'Unknown error';
-    return res.status(400).json({ message: `Error creating competition: ${errMsg}` });
+    const errMsg = error?.message || error?.toString() || '未知错误';
+    return res.status(400).json({ message: `创建竞赛失败: ${errMsg}` });
   }
 };
 
@@ -73,14 +73,14 @@ export const joinCompetition = (req: AuthRequest, res: Response) => {
   const member = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [team_id, user_id, 'leader']);
   
   if (!member) {
-    return res.status(403).json({ message: 'Only team leader can join competitions' });
+    return res.status(403).json({ message: '只有队长才能参加竞赛' });
   }
 
   try {
     execute('INSERT INTO competition_teams (competition_id, team_id) VALUES (?, ?)', [competition_id, team_id]);
-    res.json({ message: 'Team joined competition successfully' });
+    res.json({ message: '团队已成功参加竞赛' });
   } catch (error) {
-    return res.status(400).json({ message: 'Team already joined this competition' });
+    return res.status(400).json({ message: '该团队已参加此竞赛' });
   }
 };
 
@@ -89,7 +89,7 @@ export const getTeamMembers = (req: Request, res: Response) => {
 
   const team = queryOne('SELECT id FROM teams WHERE id = ?', [team_id]);
   if (!team) {
-    return res.status(404).json({ message: 'Team not found' });
+    return res.status(404).json({ message: '团队不存在' });
   }
 
   const members = queryAll(`
@@ -109,7 +109,7 @@ export const leaveTeam = (req: AuthRequest, res: Response) => {
 
   const member = queryOne('SELECT id, role FROM team_members WHERE team_id = ? AND user_id = ?', [team_id, user_id]);
   if (!member) {
-    return res.status(404).json({ message: 'Not a member of this team' });
+    return res.status(404).json({ message: '不是该团队成员' });
   }
 
   if (member.role === 'leader') {
@@ -118,13 +118,13 @@ export const leaveTeam = (req: AuthRequest, res: Response) => {
       execute('DELETE FROM competition_teams WHERE team_id = ?', [team_id]);
       execute('DELETE FROM team_members WHERE team_id = ?', [team_id]);
       execute('DELETE FROM teams WHERE id = ?', [team_id]);
-      return res.json({ message: 'Team disbanded' });
+      return res.json({ message: '团队已解散' });
     }
-    return res.status(400).json({ message: 'Transfer leadership before leaving' });
+    return res.status(400).json({ message: '请先转让队长身份再离开' });
   }
 
   execute('DELETE FROM team_members WHERE team_id = ? AND user_id = ?', [team_id, user_id]);
-  res.json({ message: 'Left team successfully' });
+  res.json({ message: '已成功离开团队' });
 };
 
 export const getCompetitions = (req: Request, res: Response) => {
@@ -137,7 +137,7 @@ export const getCompetitionLeaderboard = (req: Request, res: Response) => {
 
   const competition = queryOne('SELECT id, title FROM competitions WHERE id = ?', [competition_id]);
   if (!competition) {
-    return res.status(404).json({ message: 'Competition not found' });
+    return res.status(404).json({ message: '竞赛不存在' });
   }
 
   const leaderboard = queryAll(`

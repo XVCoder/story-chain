@@ -118,7 +118,7 @@ describe('Untested API Endpoints', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ email: 'updated@test.com' });
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Profile updated successfully');
+      expect(response.body.message).toBe('个人资料更新成功');
     });
 
     it('should fail without authentication', async () => {
@@ -145,7 +145,7 @@ describe('Untested API Endpoints', () => {
         .delete(`/api/stories/${deleteStoryId}`)
         .set('Authorization', `Bearer ${token}`);
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe('Story deleted successfully');
+      expect(response.body.message).toBe('故事删除成功');
     });
 
     it('should fail to delete non-existent story', async () => {
@@ -164,7 +164,7 @@ describe('Untested API Endpoints', () => {
       const response = await request(app)
         .delete(`/api/stories/${storyId}`)
         .set('Authorization', `Bearer ${otherToken}`);
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(403);
     });
   });
 
@@ -363,7 +363,7 @@ describe('Boundary & Edge Cases', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ story_id: storyId, content: 'Should fail' });
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Story is not accepting new nodes');
+      expect(response.body.message).toBe('该故事不接受新节点');
     });
 
     it('should reject non-member from adding to team story', async () => {
@@ -393,7 +393,7 @@ describe('Boundary & Edge Cases', () => {
         .set('Authorization', `Bearer ${otherToken}`)
         .send({ story_id: teamStoryRes.body.id, content: 'Should fail' });
       expect(nodeRes.status).toBe(403);
-      expect(nodeRes.body.message).toBe('Only team members can add nodes to team stories');
+      expect(nodeRes.body.message).toBe('只有团队成员才能添加节点');
     });
 
     it('should prevent leader from leaving team with members', async () => {
@@ -411,7 +411,7 @@ describe('Boundary & Edge Cases', () => {
         .post(`/api/teams/${tid}/leave`)
         .set('Authorization', `Bearer ${token}`);
       expect(leaveRes.status).toBe(400);
-      expect(leaveRes.body.message).toBe('Transfer leadership before leaving');
+      expect(leaveRes.body.message).toBe('请先转让队长身份再离开');
     });
 
     it('should disband team when last leader leaves', async () => {
@@ -424,7 +424,7 @@ describe('Boundary & Edge Cases', () => {
         .post(`/api/teams/${teamRes.body.id}/leave`)
         .set('Authorization', `Bearer ${token}`);
       expect(leaveRes.status).toBe(200);
-      expect(leaveRes.body.message).toBe('Team disbanded');
+      expect(leaveRes.body.message).toBe('团队已解散');
     });
   });
 });
@@ -576,7 +576,7 @@ describe('Daily Coin Limit', () => {
       .send({ amount: 1 });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Daily coin limit reached for this node (max 5)');
+    expect(res.body.message).toBe('该节点今日投币已达上限（最多5个）');
   });
 
   it('should allow another user to coin the same node (their own daily limit)', async () => {
@@ -646,7 +646,7 @@ describe('Daily Check-in', () => {
       .send();
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Already checked in today');
+    expect(res.body.message).toBe('今日已签到');
   });
 });
 

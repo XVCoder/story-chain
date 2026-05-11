@@ -1,72 +1,76 @@
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { queryAll, queryOne, execute } from '../db/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 export const addNode = (req: AuthRequest, res: Response) => {
-  const { story_id, parent_id, content } = req.body;
-  const author_id = req.user?.id;
-
-  if (!author_id) {
-    return res.status(401).json({ message: 'Authentication required' });
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ message: '请先登录' });
   }
 
-  if (!content || typeof content !== 'string' || !content.trim()) {
-    return res.status(400).json({ message: 'Content is required' });
+  const { story_id, content, parent_id } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ message: '内容为必填项' });
   }
 
-  const story = queryOne('SELECT status, current_nodes, max_nodes, mode, team_id FROM stories WHERE id = ?', [story_id]);
+  const story = queryOne('SELECT * FROM stories WHERE id = ?', [story_id]);
   
   if (!story) {
-    return res.status(404).json({ message: 'Story not found' });
-  }
-
-  if (story.status !== 'ongoing') {
-    return res.status(400).json({ message: 'Story is not accepting new nodes' });
+    return res.status(404).json({ message: '故事不存在' });
   }
 
   if (story.mode === 'solo') {
-    return res.status(400).json({ message: 'Solo mode does not accept new nodes' });
+    return res.status(403).json({ message: 'Solo模式不接受新节点' });
+  }
+
+  if (story.max_nodes > 0) {
+    const existingNodes = queryAll('SELECT COUNT(*) as count FROM story_nodes WHERE story_id = ?', [story_id]) as any[];
+    if (existingNodes[0]?.count >= story.max_nodes) {
+      return res.status(400).json({ message: '该故事已达到最大节点数' });
+    }
+  }
+
+  if (story.status !== 'ongoing') {
+    return res.status(400).json({ message: '该故事不接受新节点' });
   }
 
   if (story.mode === 'team') {
-    const member = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ?', [story.team_id, author_id]);
+    const member = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ?', [story.team_id, userId]);
     if (!member) {
-      return res.status(403).json({ message: 'Only team members can add nodes to team stories' });
+      return res.status(403).json({ message: '只有团队成员才能添加节点' });
     }
   }
 
   if (parent_id) {
-    const parent = queryOne('SELECT id FROM story_nodes WHERE id = ? AND story_id = ?', [parent_id, story_id]);
-    if (!parent) {
-      return res.status(400).json({ message: 'Parent node not found in this story' });
+    const parentNode = queryOne('SELECT id FROM story_nodes WHERE id = ? AND story_id = ?', [parent_id, story_id]);
+    if (!parentNode) {
+      return res.status(400).json({ message: '父节点不存在于该故事中' });
     }
-  }
-
-  const hasMaxNodes = story.max_nodes !== 0;
-  if (hasMaxNodes && story.current_nodes >= story.max_nodes) {
-    return res.status(400).json({ message: 'Story has reached maximum nodes' });
   }
 
   try {
-    execute('INSERT INTO story_nodes (story_id, parent_id, content, author_id) VALUES (?, ?, ?, ?)', [story_id, parent_id || null, content.trim(), author_id]);
+    execute('INSERT INTO story_nodes (story_id, parent_id, content, author_id) VALUES (?, ?, ?, ?)', [story_id, parent_id || null, content, userId]);
+    const newNode = queryOne('SELECT * FROM story_nodes WHERE story_id = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [story_id, userId]);
+    
+    const countResult = queryAll('SELECT COUNT(*) as count FROM story_nodes WHERE story_id = ?', [story_id]) as any[];
+    const newCount = countResult[0]?.count || 1;
+    execute('UPDATE stories SET current_nodes = ? WHERE id = ?', [newCount, story_id]);
 
-    const siblings = queryOne('SELECT COUNT(*) as cnt FROM story_nodes WHERE story_id = ? AND parent_id IS ?', [story_id, parent_id || null]);
-    const isNewPosition = !siblings || siblings.cnt <= 1;
-    if (isNewPosition) {
-      execute('UPDATE stories SET current_nodes = current_nodes + 1 WHERE id = ?', [story_id]);
+    if (story.max_nodes > 0 && newCount >= story.max_nodes) {
+      execute('UPDATE stories SET status = ? WHERE id = ?', ['completed', story_id]);
     }
 
-    const node = queryOne('SELECT id FROM story_nodes WHERE story_id = ? AND author_id = ? ORDER BY id DESC LIMIT 1', [story_id, author_id]);
+    autoSelectMainLineInternal(story_id);
 
-    autoSelectMainLineInternal(Number(story_id));
-
-    res.status(201).json({ id: node?.id });
-  } catch (error) {
-    return res.status(400).json({ message: 'Error adding node' });
+    res.status(201).json(newNode);
+  } catch (error: any) {
+    const errMsg = error?.message || error?.toString() || '未知错误';
+    res.status(500).json({ message: `添加节点失败: ${errMsg}` });
   }
 };
 
-export const getNodesByStory = (req: Request, res: Response) => {
+export const getNodesByStory = (req: AuthRequest, res: Response) => {
   const { story_id } = req.params;
 
   const nodes = queryAll(`
@@ -74,7 +78,7 @@ export const getNodesByStory = (req: Request, res: Response) => {
     FROM story_nodes n
     LEFT JOIN users u ON n.author_id = u.id
     WHERE n.story_id = ?
-    ORDER BY n.created_at ASC
+    ORDER BY n.id ASC
   `, [story_id]) as any[];
 
   res.json(nodes);
@@ -82,31 +86,31 @@ export const getNodesByStory = (req: Request, res: Response) => {
 
 export const selectNode = (req: AuthRequest, res: Response) => {
   const { node_id } = req.params;
-  const user_id = req.user?.id;
+  const userId = req.user?.id;
 
   const node = queryOne('SELECT id, story_id, parent_id FROM story_nodes WHERE id = ?', [node_id]);
   
   if (!node) {
-    return res.status(404).json({ message: 'Node not found' });
+    return res.status(404).json({ message: '节点不存在' });
   }
 
-  const story = queryOne('SELECT author_id, current_nodes, max_nodes, mode, team_id FROM stories WHERE id = ?', [node.story_id]);
+  const story = queryOne('SELECT * FROM stories WHERE id = ?', [node.story_id]);
   
   if (!story) {
-    return res.status(404).json({ message: 'Story not found' });
+    return res.status(404).json({ message: '故事不存在' });
   }
 
   if (story.mode === 'solo') {
-    return res.status(400).json({ message: 'Solo mode does not require node selection' });
+    return res.status(400).json({ message: 'Solo模式不需要选择节点' });
   }
 
   if (story.mode === 'team') {
-    const leader = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [story.team_id, user_id, 'leader']);
-    if (!leader) {
-      return res.status(403).json({ message: 'Only team leader can select nodes' });
+    const member = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [story.team_id, userId, 'leader']);
+    if (!member) {
+      return res.status(403).json({ message: '只有队长才能选择节点' });
     }
-  } else if (story.author_id !== user_id) {
-    return res.status(403).json({ message: 'Only story author can select nodes' });
+  } else if (story.author_id !== userId) {
+    return res.status(403).json({ message: '只有故事发起者才能选择节点' });
   }
 
   if (node.parent_id) {
@@ -114,45 +118,41 @@ export const selectNode = (req: AuthRequest, res: Response) => {
   } else {
     execute('UPDATE story_nodes SET is_manual_selected = FALSE WHERE story_id = ? AND parent_id IS NULL', [node.story_id]);
   }
+
   execute('UPDATE story_nodes SET is_manual_selected = TRUE WHERE id = ?', [node_id]);
 
   const selectedCount = autoSelectMainLineInternal(node.story_id);
 
-  const hasMaxNodes = story.max_nodes !== 0;
-  const newStatus = hasMaxNodes && story.current_nodes >= story.max_nodes ? 'completed' : 'ongoing';
-  execute('UPDATE stories SET status = ? WHERE id = ?', [newStatus, node.story_id]);
-
-  calculatePoints(node.story_id, story.mode, story.team_id);
-  res.json({ message: 'Node selected successfully', timeline_nodes: selectedCount });
+  res.json({ message: '节点选择成功', timeline_nodes: selectedCount });
 };
 
 export const unselectNode = (req: AuthRequest, res: Response) => {
   const { node_id } = req.params;
-  const user_id = req.user?.id;
+  const userId = req.user?.id;
 
   const node = queryOne('SELECT id, story_id, parent_id FROM story_nodes WHERE id = ?', [node_id]);
-
+  
   if (!node) {
-    return res.status(404).json({ message: 'Node not found' });
+    return res.status(404).json({ message: '节点不存在' });
   }
 
-  const story = queryOne('SELECT author_id, mode, team_id FROM stories WHERE id = ?', [node.story_id]);
-
+  const story = queryOne('SELECT * FROM stories WHERE id = ?', [node.story_id]);
+  
   if (!story) {
-    return res.status(404).json({ message: 'Story not found' });
+    return res.status(404).json({ message: '故事不存在' });
   }
 
   if (story.mode === 'solo') {
-    return res.status(400).json({ message: 'Solo mode does not require node selection' });
+    return res.status(400).json({ message: 'Solo模式不需要选择节点' });
   }
 
   if (story.mode === 'team') {
-    const leader = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [story.team_id, user_id, 'leader']);
-    if (!leader) {
-      return res.status(403).json({ message: 'Only team leader can change node selection' });
+    const member = queryOne('SELECT id FROM team_members WHERE team_id = ? AND user_id = ? AND role = ?', [story.team_id, userId, 'leader']);
+    if (!member) {
+      return res.status(403).json({ message: '只有队长才能更改节点选择' });
     }
-  } else if (story.author_id !== user_id) {
-    return res.status(403).json({ message: 'Only story author can change node selection' });
+  } else if (story.author_id !== userId) {
+    return res.status(403).json({ message: '只有故事发起者才能更改节点选择' });
   }
 
   if (node.parent_id) {
@@ -163,7 +163,7 @@ export const unselectNode = (req: AuthRequest, res: Response) => {
 
   const selectedCount = autoSelectMainLineInternal(node.story_id);
 
-  res.json({ message: 'Manual selection cancelled', timeline_nodes: selectedCount });
+  res.json({ message: '手动选择已取消', timeline_nodes: selectedCount });
 };
 
 export const autoSelectMainLine = (req: AuthRequest, res: Response) => {
@@ -171,85 +171,74 @@ export const autoSelectMainLine = (req: AuthRequest, res: Response) => {
 
   const story = queryOne('SELECT id FROM stories WHERE id = ?', [story_id]);
   if (!story) {
-    return res.status(404).json({ message: 'Story not found' });
+    return res.status(404).json({ message: '故事不存在' });
   }
 
   const selectedCount = autoSelectMainLineInternal(Number(story_id));
 
-  res.json({ message: `Main line auto-selected: ${selectedCount} nodes in chain`, nodes: selectedCount });
+  res.json({ 
+    message: `主线自动选择完成：共 ${selectedCount} 个节点`,
+    timeline_nodes: selectedCount 
+  });
 };
 
-export function autoSelectMainLineInternal(story_id: number): number {
-  const root = queryOne('SELECT id FROM story_nodes WHERE story_id = ? AND parent_id IS NULL ORDER BY id ASC LIMIT 1', [story_id]);
-  if (!root) return 0;
-
-  execute('UPDATE story_nodes SET is_selected = FALSE WHERE story_id = ?', [story_id]);
-  execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [root.id]);
-
-  let count = 1;
-  let currentParentId = root.id;
-  let isRootLevel = true;
-
-  while (true) {
-    let bestChild;
-
-    if (isRootLevel) {
-      const manualChild = queryOne(`
-        SELECT id, coins, created_at
-        FROM story_nodes
-        WHERE story_id = ? AND (parent_id = ? OR (parent_id IS NULL AND id != ?)) AND is_manual_selected = TRUE
-        LIMIT 1
-      `, [story_id, root.id, root.id]);
-
-      if (manualChild) {
-        bestChild = manualChild;
-      } else {
-        bestChild = queryOne(`
-          SELECT id, coins, created_at
-          FROM story_nodes
-          WHERE story_id = ? AND (parent_id = ? OR (parent_id IS NULL AND id != ?))
-          ORDER BY coins DESC, created_at ASC
-          LIMIT 1
-        `, [story_id, root.id, root.id]);
-      }
-    } else {
-      const manualChild = queryOne(`
-        SELECT id, coins, created_at
-        FROM story_nodes
-        WHERE story_id = ? AND parent_id = ? AND is_manual_selected = TRUE
-        LIMIT 1
-      `, [story_id, currentParentId]);
-
-      if (manualChild) {
-        bestChild = manualChild;
-      } else {
-        bestChild = queryOne(`
-          SELECT id, coins, created_at
-          FROM story_nodes
-          WHERE story_id = ? AND parent_id = ?
-          ORDER BY coins DESC, created_at ASC
-          LIMIT 1
-        `, [story_id, currentParentId]);
-      }
-    }
-
-    if (!bestChild) break;
-
-    execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [bestChild.id]);
-    currentParentId = bestChild.id;
-    count++;
-    isRootLevel = false;
+export function autoSelectMainLineInternal(storyId: number): number {
+  const story = queryOne('SELECT id FROM stories WHERE id = ?', [storyId]);
+  if (!story) {
+    return 0;
   }
 
-  return count;
+  execute('UPDATE story_nodes SET is_selected = FALSE WHERE story_id = ?', [storyId]);
+
+  const allNodes = queryAll(
+    'SELECT id, parent_id, is_manual_selected, coins FROM story_nodes WHERE story_id = ? ORDER BY is_manual_selected DESC, coins DESC, created_at ASC',
+    [storyId]
+  ) as any[];
+
+  if (allNodes.length === 0) {
+    return 0;
+  }
+
+  const canonicalRoot = allNodes
+    .filter((n: any) => n.parent_id === null)
+    .sort((a: any, b: any) => a.id - b.id)[0];
+
+  if (!canonicalRoot) {
+    return 0;
+  }
+
+  const selectedIds: number[] = [canonicalRoot.id];
+  const visitedIds = new Set<number>([canonicalRoot.id]);
+  let currentId = canonicalRoot.id;
+
+  while (true) {
+    let nextNode = allNodes.find((n: any) => !visitedIds.has(n.id) && n.parent_id === currentId);
+
+    if (!nextNode && currentId === canonicalRoot.id) {
+      nextNode = allNodes.find((n: any) => !visitedIds.has(n.id) && n.parent_id === null);
+    }
+
+    if (!nextNode) break;
+
+    selectedIds.push(nextNode.id);
+    visitedIds.add(nextNode.id);
+    currentId = nextNode.id;
+  }
+
+  selectedIds.forEach(id => {
+    execute('UPDATE story_nodes SET is_selected = TRUE WHERE id = ?', [id]);
+  });
+
+  return selectedIds.length;
 }
 
-export const getTimeline = (req: Request, res: Response) => {
+export const getTimeline = (req: AuthRequest, res: Response) => {
   const { story_id } = req.params;
 
-  const story = queryOne('SELECT id, title FROM stories WHERE id = ?', [story_id]);
+  const story = queryOne('SELECT id FROM stories WHERE id = ?', [story_id]);
+  
   if (!story) {
-    return res.status(404).json({ message: 'Story not found' });
+    return res.status(404).json({ message: '故事不存在' });
   }
 
   const timelineNodes = queryAll(`
@@ -260,49 +249,11 @@ export const getTimeline = (req: Request, res: Response) => {
     ORDER BY n.id ASC
   `, [story_id]) as any[];
 
-  const fullText = timelineNodes.map((n: any) => '　　' + n.content.replace(/[\r\n]/g, '')).join('\n');
+  const fullText = timelineNodes.map((n: any) => n.content).join('');
 
   res.json({
-    story_id: story.id,
-    title: story.title,
     nodes: timelineNodes,
     full_text: fullText,
-    node_count: timelineNodes.length,
+    node_count: timelineNodes.length
   });
-};
-
-const calculatePoints = (story_id: number, mode: string, team_id: number | null) => {
-  const story = queryOne('SELECT views, author_id FROM stories WHERE id = ?', [story_id]);
-  if (!story) return;
-
-  if (mode === 'solo') {
-    const soloPoints = Math.floor(story.views / 5);
-    execute('UPDATE users SET points = points + ? WHERE id = ?', [soloPoints, story.author_id]);
-    return;
-  }
-
-  let multiplier = 1;
-  if (mode === 'selected') {
-    multiplier = 1.5;
-  }
-
-  const authorPoints = Math.floor((story.views / 10) * multiplier);
-  execute('UPDATE users SET points = points + ? WHERE id = ?', [authorPoints, story.author_id]);
-
-  const nodes = queryAll('SELECT author_id, coins FROM story_nodes WHERE story_id = ? AND is_selected = TRUE', [story_id]) as any[];
-
-  if (!nodes.length) return;
-
-  const totalCoins = nodes.reduce((sum: number, node: any) => sum + (node.coins || 0), 0);
-  nodes.forEach((node: any) => {
-    const nodePoints = totalCoins > 0 ? Math.floor((node.coins / totalCoins) * 100 * multiplier) : 0;
-    execute('UPDATE users SET points = points + ? WHERE id = ?', [nodePoints, node.author_id]);
-  });
-
-  if (mode === 'team' && team_id) {
-    const competitionTeam = queryOne('SELECT id FROM competition_teams WHERE team_id = ?', [team_id]);
-    if (competitionTeam) {
-      execute('UPDATE competition_teams SET score = score + ? WHERE team_id = ?', [100, team_id]);
-    }
-  }
 };

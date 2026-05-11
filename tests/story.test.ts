@@ -81,7 +81,7 @@ describe('Story API', () => {
       .set('Authorization', `Bearer ${token}`);
     
     expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Like added');
+    expect(response.body.message).toBe('点赞成功');
   });
 
   it('should favorite a story', async () => {
@@ -90,6 +90,6 @@ describe('Story API', () => {
       .set('Authorization', `Bearer ${token}`);
     
     expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Favorite added');
+    expect(response.body.message).toBe('收藏成功');
   });
 });

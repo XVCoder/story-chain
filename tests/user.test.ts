@@ -16,11 +16,12 @@ describe('User API', () => {
 
   let token: string;
   const uniqueName = `testuser${Date.now()}`;
+  const uniqueEmail = `test_${Date.now()}@test.com`;
 
   it('should register a new user', async () => {
     const response = await request(app)
       .post('/api/users/register')
-      .send({ username: uniqueName, password: 'testpass', email: 'test@test.com' });
+      .send({ username: uniqueName, password: 'testpass', email: uniqueEmail });
     
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('id');
@@ -89,7 +90,7 @@ describe('User API', () => {
       .set('Authorization', `Bearer ${token}`);
     
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe('Already checked in today');
+    expect(response.body.message).toBe('今日已签到');
   });
 
   it('should reject registration with short password', async () => {

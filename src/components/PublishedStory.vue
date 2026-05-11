@@ -163,9 +163,7 @@ onMounted(() => {
           </div>
 
           <div class="book-body" v-if="timeline && timeline.full_text">
-            <div class="story-text" v-for="(para, idx) in timeline.full_text.split('\n')" :key="idx">
-              {{ para }}
-            </div>
+            <div class="story-text">{{ timeline.full_text }}</div>
           </div>
           <div class="book-body" v-else>
             <p class="story-text">{{ story.content }}</p>
