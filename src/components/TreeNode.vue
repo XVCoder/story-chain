@@ -162,4 +162,59 @@ const formatTime = (dateStr: string) => {
   height: 2px;
   background: #e4e7ed;
 }
+
+@media (max-width: 767px) {
+  .node-item {
+    padding: 10px;
+  }
+
+  .node-header {
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .node-number {
+    font-size: 13px;
+  }
+
+  .node-author {
+    font-size: 12px;
+  }
+
+  .node-time {
+    font-size: 11px;
+  }
+
+  .node-coins {
+    margin-left: 0;
+    font-size: 13px;
+  }
+
+  .node-content {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .node-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .node-actions .el-button {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .tree-children {
+    padding-left: 16px;
+    margin-top: 8px;
+  }
+
+  .child-connector {
+    left: -16px;
+    width: 16px;
+  }
+}
 </style>

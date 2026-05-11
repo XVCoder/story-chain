@@ -146,4 +146,40 @@ onMounted(() => {
   padding: 60px 0;
   grid-column: 1 / -1;
 }
+
+@media (max-width: 767px) {
+  .page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+  }
+
+  .stories-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .story-header h3 {
+    font-size: 16px;
+  }
+
+  .story-summary {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .story-meta {
+    gap: 12px;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .story-actions {
+    gap: 8px;
+  }
+}
 </style>

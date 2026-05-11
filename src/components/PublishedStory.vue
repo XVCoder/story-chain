@@ -420,4 +420,69 @@ onMounted(() => {
     min-width: 64px;
   }
 }
+
+@media (max-width: 480px) {
+  .book-page {
+    padding: 24px 16px;
+  }
+
+  .book-title {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+
+  .book-summary {
+    font-size: 13px;
+  }
+
+  .book-meta {
+    padding: 16px;
+  }
+
+  .meta-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .meta-label {
+    width: auto;
+    font-size: 12px;
+  }
+
+  .meta-value {
+    font-size: 13px;
+  }
+
+  .book-body {
+    font-size: 14px;
+    line-height: 1.9;
+  }
+
+  .story-text {
+    text-indent: 2em;
+  }
+
+  .action-bar {
+    gap: 16px;
+  }
+
+  .action-btn {
+    padding: 8px 12px;
+    min-width: 56px;
+    border-radius: 8px;
+  }
+
+  .action-icon {
+    font-size: 18px;
+  }
+
+  .action-count,
+  .action-label {
+    font-size: 12px;
+  }
+
+  .nav-brand {
+    font-size: 16px;
+  }
+}
 </style>

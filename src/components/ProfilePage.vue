@@ -296,4 +296,67 @@ onMounted(async () => {
   color: #f56c6c;
   font-weight: bold;
 }
+
+@media (max-width: 767px) {
+  .profile-header {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  .avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .avatar-icon {
+    font-size: 30px;
+  }
+
+  .username {
+    font-size: 20px;
+  }
+
+  .email {
+    font-size: 13px;
+  }
+
+  .points-display {
+    padding: 10px 20px;
+  }
+
+  .points-value {
+    font-size: 24px;
+  }
+
+  .profile-stats {
+    gap: 8px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  .inventory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .inventory-item {
+    padding: 12px;
+  }
+
+  .item-icon {
+    font-size: 28px;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
 </style>

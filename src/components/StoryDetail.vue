@@ -494,4 +494,55 @@ onMounted(() => {
   font-size: 13px;
   line-height: 1.6;
 }
+
+@media (max-width: 767px) {
+  .story-title {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .story-header {
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    margin-left: 0;
+    font-size: 13px;
+  }
+
+  .story-summary {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .story-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .story-actions .el-button {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .nodes-section h2 {
+    font-size: 16px;
+  }
+
+  .tree-root {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .timeline-header h2 {
+    font-size: 15px;
+  }
+
+  .timeline-story {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+}
 </style>

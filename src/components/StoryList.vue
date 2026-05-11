@@ -373,4 +373,72 @@ onMounted(() => {
 .fab-icon {
   line-height: 1;
 }
+
+@media (max-width: 767px) {
+  .list-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .tabs {
+    min-width: auto;
+  }
+
+  .search-control {
+    margin: 0;
+    min-width: auto;
+  }
+
+  .sort-control {
+    justify-content: flex-end;
+  }
+
+  .stories-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .empty-state {
+    padding: 40px 16px;
+  }
+
+  .empty-icon {
+    font-size: 40px;
+  }
+
+  .empty-illustration {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 16px;
+  }
+
+  .empty-title {
+    font-size: 18px;
+  }
+
+  .fab-btn {
+    bottom: 20px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 767px) {
+  .el-dialog {
+    --el-dialog-width: 95vw !important;
+    max-width: 95vw !important;
+  }
+
+  :deep(.el-form-item__label) {
+    width: 80px !important;
+  }
+
+  :deep(.el-form-item__content) {
+    margin-left: 80px !important;
+  }
+}
 </style>

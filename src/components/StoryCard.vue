@@ -174,4 +174,24 @@ const handleView = () => {
   color: #c0c4cc;
   font-size: 12px;
 }
+
+@media (max-width: 767px) {
+  .story-title {
+    font-size: 16px;
+  }
+
+  .story-summary {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .story-stats {
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .stat-item {
+    font-size: 13px;
+  }
+}
 </style>

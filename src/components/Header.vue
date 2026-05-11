@@ -8,6 +8,20 @@ import { inventoryAPI, authAPI } from '../api';
 const router = useRouter();
 
 const showInventory = ref(false);
+const mobileMenuOpen = ref(false);
+
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value;
+};
+
+const closeMobileMenu = () => {
+  mobileMenuOpen.value = false;
+};
+
+const navigateTo = (path: string) => {
+  router.push(path);
+  closeMobileMenu();
+};
 
 const handleLogout = () => {
   localStorage.removeItem('token');
@@ -58,6 +72,7 @@ const handleCheckIn = async () => {
 
 const goHome = () => {
   router.push('/home');
+  closeMobileMenu();
 };
 
 const itemName = (type: string) => {
@@ -76,7 +91,7 @@ defineExpose({ refreshInventory, refreshUserPoints });
         <span class="logo-text">故事接龙</span>
       </div>
       
-      <nav class="nav">
+      <nav class="nav desktop-nav">
         <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/home' }" @click="router.push('/home')">首页</span>
         <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/teams' }" @click="router.push('/teams')">团队</span>
         <span class="nav-item" :class="{ active: router.currentRoute.value.path === '/competitions' }" @click="router.push('/competitions')">竞赛</span>
@@ -97,8 +112,23 @@ defineExpose({ refreshInventory, refreshUserPoints });
             <ElDropdownItem divided @click="handleLogout">退出登录</ElDropdownItem>
           </template>
         </ElDropdown>
+        
+        <button class="hamburger" :class="{ open: mobileMenuOpen }" @click="toggleMobileMenu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </div>
     </div>
+
+    <Transition name="slide-down">
+      <nav v-if="mobileMenuOpen" class="mobile-nav">
+        <span class="mobile-nav-item" :class="{ active: router.currentRoute.value.path === '/home' }" @click="navigateTo('/home')">📖 首页</span>
+        <span class="mobile-nav-item" :class="{ active: router.currentRoute.value.path === '/teams' }" @click="navigateTo('/teams')">👥 团队</span>
+        <span class="mobile-nav-item" :class="{ active: router.currentRoute.value.path === '/competitions' }" @click="navigateTo('/competitions')">🏆 竞赛</span>
+        <span class="mobile-nav-item" :class="{ active: router.currentRoute.value.path === '/my-stories' }" @click="navigateTo('/my-stories')">📝 我的故事</span>
+      </nav>
+    </Transition>
 
     <div v-if="showInventory" class="inventory-panel">
         <div class="inventory-header">
@@ -258,5 +288,137 @@ defineExpose({ refreshInventory, refreshUserPoints });
   text-align: center;
   color: #909399;
   padding: 16px;
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 8px;
+  transition: background 0.3s;
+}
+
+.hamburger:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hamburger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger.open span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.open span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+.mobile-nav {
+  display: none;
+  flex-direction: column;
+  background: rgba(102, 126, 234, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 8px 20px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-nav-item {
+  color: white;
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  font-size: 15px;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item.active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.slide-down-enter-to,
+.slide-down-leave-from {
+  max-height: 300px;
+  opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .header {
+    padding: 0 12px;
+  }
+
+  .header-content {
+    height: 52px;
+  }
+
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .mobile-nav {
+    display: flex;
+  }
+
+  .logo-text {
+    font-size: 17px;
+  }
+
+  .logo-icon {
+    font-size: 20px;
+  }
+
+  .user-info {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .username {
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .inventory-panel {
+    right: 8px;
+    left: 8px;
+    min-width: auto;
+    width: auto;
+  }
 }
 </style>

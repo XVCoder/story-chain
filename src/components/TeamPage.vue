@@ -205,4 +205,43 @@ onMounted(() => {
   padding: 40px;
   grid-column: 1 / -1;
 }
+
+@media (max-width: 767px) {
+  .page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .team-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .team-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .team-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .el-dialog {
+    --el-dialog-width: 95vw !important;
+    max-width: 95vw !important;
+  }
+}
 </style>

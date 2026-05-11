@@ -217,4 +217,43 @@ const handleRegister = async () => {
 .link:hover {
   color: #66b1ff;
 }
+
+@media (max-width: 767px) {
+  .login-page {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .brand-icon {
+    font-size: 48px;
+    margin-bottom: 8px;
+  }
+
+  .brand-title {
+    font-size: 28px;
+  }
+
+  .brand-desc {
+    font-size: 14px;
+  }
+
+  .login-brand {
+    margin-bottom: 24px;
+  }
+
+  .login-card {
+    padding: 24px 20px;
+    border-radius: 12px;
+  }
+
+  .login-form {
+    margin-top: 16px;
+  }
+
+  .submit-btn {
+    height: 40px;
+    font-size: 15px;
+  }
+}
 </style>

@@ -207,4 +207,52 @@ onMounted(() => {
   color: #909399;
   padding: 60px 0;
 }
+
+@media (max-width: 767px) {
+  .page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .competition-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .comp-header h3 {
+    font-size: 16px;
+  }
+
+  .comp-desc {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .comp-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .comp-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .el-dialog {
+    --el-dialog-width: 95vw !important;
+    max-width: 95vw !important;
+  }
+}
 </style>

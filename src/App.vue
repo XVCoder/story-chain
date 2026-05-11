@@ -59,4 +59,10 @@ onMounted(async () => {
   padding: 0;
   max-width: none;
 }
+
+@media (max-width: 767px) {
+  .main-content {
+    padding: 12px;
+  }
+}
 </style>

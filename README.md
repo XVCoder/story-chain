@@ -209,6 +209,7 @@ story-chain/
 | Phase 5: 积分与体验优化       | ✅ 已完成 | 2026-04-29 |
 | Phase 6: 集成测试与验收       | ✅ 已完成 | 2026-04-29 |
 | Round 2: 中文化 + 自定义节点数 | ✅ 已完成 | 2026-05-10 |
+| Round 3: 手机版页面适配       | ✅ 已完成 | 2026-05-10 |
 
 ## 项目完成状态
 
@@ -373,6 +374,28 @@ npx jest
 - 后端 `nodeController.ts`：
   - 添加节点达到 `max_nodes` 上限时，自动将故事状态设为 `completed`
   - 优化 `autoSelectMainLineInternal` 算法：使用"规范根节点"策略，正确处理根级兄弟节点遍历，避免无限循环
+
+### 10. 手机版页面适配
+
+**需求**: 将所有前端页面适配手机端浏览，确保在 320px~768px 宽度的移动设备上具有良好的用户体验。
+
+**实现**:
+- **断点体系**: 480px（手机小屏）/ 768px（平板/手机横屏）
+- **全局基础**:
+  - `index.html` viewport 添加 `maximum-scale=1.0, user-scalable=no` 防止双击缩放
+  - `style.css` 全局 `overflow-x: hidden` 防止横向滚动，ElDialog 默认 90vw 宽度
+- **Header.vue**: 768px 以下隐藏桌面导航，显示汉堡菜单按钮（三横线→X动画），点击展开移动端导航面板（slide-down 动画）
+- **App.vue**: 移动端 padding 从 20px 减至 12px
+- **StoryList.vue**: 列头纵向排列、故事网格单列、Dialog 95vw、FAB 按钮缩小
+- **StoryCard.vue**: 标题/摘要/统计字号缩小
+- **StoryDetail.vue**: 标题字号缩小、操作按钮 flex-wrap 自动换行、树根内边距减少
+- **TreeNode.vue**: 头部 flex-wrap、缩进 24px→16px、按钮缩小
+- **PublishedStory.vue**: 增加 480px 断点（meta 纵向排列、书页内边距减少、操作按钮缩小）
+- **LoginPage.vue**: 品牌标题缩小、登录卡片内边距减少
+- **ProfilePage.vue**: 头像/用户名/积分换行、统计字号缩小、道具网格缩小
+- **MyStories.vue**: 网格单列、标题/摘要字号缩小
+- **TeamPage.vue**: 网格单列、团队卡片纵向排列、Dialog 95vw
+- **CompetitionPage.vue**: 网格单列、竞赛卡片字号缩小、Dialog 95vw
 
 ## License
 
