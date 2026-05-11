@@ -40,5 +40,5 @@
 - [x] 5.2 vue-tsc 类型检查 — 通过
 - [x] 5.3 vite build 前端构建 — 成功
 - [x] 5.4 server:build 后端编译 — 成功
-- [ ] 5.5 Git 提交
-- [ ] 5.6 更新 README.md
+- [x] 5.5 Git 提交 — 51aaa50
+- [x] 5.6 更新 README.md — 已追加第10节手机适配实现要点
