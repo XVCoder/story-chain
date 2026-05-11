@@ -9,6 +9,10 @@ import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
+router.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 router.post('/users/register', register);
 router.post('/users/login', login);
 router.get('/users/profile', authenticate, getUserProfile);

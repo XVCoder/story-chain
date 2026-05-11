@@ -88,6 +88,36 @@ npx vite --host 127.0.0.1 --port 3000
 - **Swagger API文档**: <http://localhost:8080/api-docs>
 - **API JSON规范**: <http://localhost:8080/api-docs.json>
 
+### Docker 一键部署
+
+```bash
+# 复制环境变量配置
+cp .env.example .env
+# 编辑 .env 修改 JWT_SECRET 等配置
+
+# 构建并启动所有服务
+docker-compose up -d --build
+
+# 访问应用
+# 前端: http://localhost
+# API: http://localhost/api
+# Swagger: http://localhost/api-docs
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+
+# 停止并删除数据卷（注意：会删除数据库）
+docker-compose down -v
+```
+
+**Docker 架构：**
+- `frontend`: nginx 反向代理 + Vue SPA 静态文件服务（端口 80）
+- `backend`: Node.js 20 Alpine 运行 Express API（端口 8080）
+- `db-data`: Docker named volume 持久化 SQLite 数据库文件
+
 ## 项目结构
 
 ```
@@ -184,6 +214,7 @@ story-chain/
 | <br /> | POST `/api/competitions`                            | 创建竞赛               |
 | <br /> | POST `/api/competitions/join`                       | 加入竞赛               |
 | <br /> | GET `/api/competitions/:competition_id/leaderboard` | 获取竞赛排行榜            |
+| **系统** | GET `/api/health`                                   | 健康检查（Docker healthcheck） |
 
 ## TDD 开发流程
 
@@ -210,6 +241,7 @@ story-chain/
 | Phase 6: 集成测试与验收       | ✅ 已完成 | 2026-04-29 |
 | Round 2: 中文化 + 自定义节点数 | ✅ 已完成 | 2026-05-10 |
 | Round 3: 手机版页面适配       | ✅ 已完成 | 2026-05-10 |
+| Round 4: Docker 容器化部署    | ✅ 已完成 | 2026-05-10 |
 
 ## 项目完成状态
 
@@ -396,6 +428,34 @@ npx jest
 - **MyStories.vue**: 网格单列、标题/摘要字号缩小
 - **TeamPage.vue**: 网格单列、团队卡片纵向排列、Dialog 95vw
 - **CompetitionPage.vue**: 网格单列、竞赛卡片字号缩小、Dialog 95vw
+
+### 11. Docker 容器化部署
+
+**需求**: 实现前后端 Docker 镜像打包，生成 docker-compose 一键部署方案。
+
+**实现**:
+- **前端 Dockerfile**（根目录 `Dockerfile`）：
+  - 多阶段构建：Node.js 20 Alpine 构建 Vue 应用 → nginx:alpine 提供静态文件服务
+  - 构建阶段安装依赖、执行 `vue-tsc -b && vite build`
+  - 运行阶段仅包含 `dist/` 产物和 nginx 配置，镜像体积最小化
+- **后端 Dockerfile**（`server/Dockerfile`）：
+  - 多阶段构建：Node.js 20 Alpine 安装依赖 + 编译 TypeScript → 生产阶段仅安装 production 依赖
+  - 编译阶段执行 `npx tsc -p tsconfig.build.json`
+  - 生产阶段仅包含 `server/dist/` 编译产物和 `node_modules`
+- **nginx.conf**：
+  - SPA 路由回退：`try_files $uri $uri/ /index.html`
+  - API 反向代理：`/api/`、`/api-docs`、`/swagger-ui`、`/swagger.json` 代理到 `backend:8080`
+  - gzip 压缩、静态资源 7 天缓存
+- **docker-compose.yml**：
+  - `frontend` 服务：nginx 端口 80，依赖 backend 健康检查通过后启动
+  - `backend` 服务：Node.js 端口 8080，Docker named volume 持久化数据库
+  - 环境变量通过 `.env` 文件注入（JWT_SECRET、PORT 等）
+  - 后端 healthcheck 使用 `/api/health` 端点
+- **代码调整**：
+  - `routes/index.ts`：新增 `GET /api/health` 健康检查端点
+  - `db/database.ts`：数据库路径支持 `DB_PATH` 环境变量覆盖
+  - `.gitignore`：添加 `.env` 防止泄露密钥
+  - `.dockerignore`：排除 node_modules、tests、.git 等不必要文件
 
 ## License
 

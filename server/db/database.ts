@@ -15,7 +15,7 @@ try {
 const sqlJsMainPath = _require.resolve('sql.js');
 const sqlJsPackagePath = path.resolve(sqlJsMainPath, '../..');
 const wasmDir = path.join(sqlJsPackagePath, 'dist');
-const dbPath = path.join(currentDir, 'story_chain.db');
+const dbPath = process.env.DB_PATH || path.join(currentDir, 'story_chain.db');
 
 export let db: any = null;
 
